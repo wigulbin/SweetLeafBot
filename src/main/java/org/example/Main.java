@@ -10,18 +10,12 @@ import discord4j.core.event.domain.interaction.ModalSubmitInteractionEvent;
 import discord4j.core.event.domain.message.MessageCreateEvent;
 import discord4j.core.object.command.ApplicationCommandInteractionOptionValue;
 import discord4j.core.object.command.ApplicationCommandOption;
-import discord4j.core.object.component.ActionRow;
-import discord4j.core.object.component.Button;
-import discord4j.core.object.component.SelectMenu;
-import discord4j.core.object.component.TextInput;
+import discord4j.core.object.component.*;
 import discord4j.core.object.entity.Message;
 import discord4j.core.object.entity.User;
 import discord4j.core.object.entity.channel.GuildMessageChannel;
 import discord4j.core.spec.*;
-import discord4j.discordjson.json.ApplicationCommandOptionChoiceData;
-import discord4j.discordjson.json.ApplicationCommandOptionData;
-import discord4j.discordjson.json.ApplicationCommandRequest;
-import discord4j.discordjson.json.ImmutableApplicationCommandOptionData;
+import discord4j.discordjson.json.*;
 import discord4j.rest.interaction.GuildCommandRegistrar;
 import discord4j.rest.util.Color;
 import org.reactivestreams.Publisher;
@@ -85,33 +79,64 @@ public class Main {
 
 
                             Button button = Button.primary("custom-id", "Sign Up!");
+                            Button deleteButton = Button.danger("delete-id", "Remove");
                             return client.getChannelById(Snowflake.of(event.getInteraction().getChannelId().asLong()))
                                     .ofType(GuildMessageChannel.class)
                                     .flatMap(channel -> {
+                                        PartyInfo partyInfo = new PartyInfo(type, new UserInfo(userid, userName), finalPeople, server, true);
+
                                         MessageCreateSpec messageSpec = MessageCreateSpec.builder()
                                                 // Buttons must be in action rows
-                                                .addEmbed(createPartyEmbed(new PartyInfo(type, userid, finalPeople, server, userName, true)))
-                                                .addComponent(ActionRow.of(button)).build();
+                                                .addEmbed(createPartyEmbed(partyInfo))
+                                                .addComponent(ActionRow.of(button, deleteButton)).build();
+
                                         Mono<Message> messageMono = channel.createMessage(messageSpec);
 
-                                        Mono<Void> tempListener = client.on(ButtonInteractionEvent.class, buttonEvent -> {
-                                            if (buttonEvent.getCustomId().equals("custom-id")) {
-                                                    if(buttonEvent.getMessage().isPresent())
+                                        Mono<Void> buttonListener = client.on(ButtonInteractionEvent.class, buttonEvent -> {
+                                                    if (buttonEvent.getCustomId().equals("custom-id"))
                                                     {
+                                                        String buttonUserName = buttonEvent.getInteraction().getUser().getGlobalName().get();
+                                                        String buttonUserid = buttonEvent.getInteraction().getUser().getId().asString();
+
+                                                        partyInfo.addUser(new UserInfo(buttonUserid, buttonUserName));
+
+                                                        return buttonEvent.edit("")
+                                                                .withEmbeds(createPartyEmbed(partyInfo))
+                                                                .withComponents(ActionRow.of(button, deleteButton));
+                                                    }
+
+                                                    if (buttonEvent.getCustomId().equals("delete-id")) {
+                                                        String buttonUserName = buttonEvent.getInteraction().getUser().getGlobalName().get();
+                                                        String buttonUserid = buttonEvent.getInteraction().getUser().getId().asString();
+
+                                                        if(buttonUserid.equals(partyInfo.getHostInfo().id)){
+
+                                                            InteractionPresentModalSpec.Builder spec = InteractionPresentModalSpec.builder()
+                                                                    .title("Remove User from event: ")
+                                                                    .customId(MODAL_CUSTOM_ID);
+
+                                                            for (UserInfo userInfo : partyInfo.getUserList())
+                                                                spec.addComponent(ActionRow.of(TextInput.small("text-" + userInfo.id, userInfo.name, userInfo.name).prefilled(userInfo.name)));
+
+                                                            return buttonEvent.presentModal(spec.build());
+                                                        } else {
+                                                            partyInfo.removeUser(new UserInfo(buttonUserid, buttonUserName));
+                                                        }
+
+                                                        return buttonEvent.edit("")
+                                                                .withEmbeds(createPartyEmbed(partyInfo))
+                                                                .withComponents(ActionRow.of(button, deleteButton));
 
                                                     }
-//                                                messageSpec.
-                                                return buttonEvent.reply("You clicked me!").withEphemeral(true);
-                                            } else {
-                                                // Ignore it
-                                                return Mono.empty();
-                                            }
-                                        }).timeout(Duration.ofMinutes(30))
+                                                    // Ignore it
+                                                    return Mono.empty();
+
+                                                }).timeout(Duration.ofMinutes(30))
                                                 .onErrorResume(TimeoutException.class, ignore -> Mono.empty())
                                                 .then();
 
 
-                                        return messageMono.then(tempListener);
+                                        return messageMono.then(buttonListener);
                                     });
 
 
@@ -213,18 +238,27 @@ public class Main {
     public static EmbedCreateSpec createPartyEmbed(PartyInfo partyInfo)
     {
         String status = "Open";
-        if(!partyInfo.status)
+        if(!partyInfo.isStatus())
             status = "Closed";
 
         EmbedCreateSpec.Builder embed = EmbedCreateSpec.builder()
                 .color(partyInfo.getColor())
-                .title("Hosted by " + partyInfo.host + "")
-                .author( "(" + status + ") " + partyInfo.server + " " + partyInfo.type + " Party", "", partyInfo.getImageURL())
-                .description("<@" + partyInfo.id + ">" + " is hosting a " + partyInfo.type + " party at ___")
+                .title("Hosted by " + partyInfo.getHostInfo().name + "")
+                .author( "(" + status + ") " + partyInfo.getServer() + " " + partyInfo.getType() + " Party", "", partyInfo.getImageURL())
+                .description(partyInfo.getHostInfo().getPingText() + " is hosting a " + partyInfo.getType() + " party at ___")
                 .thumbnail(partyInfo.getImageURL());
 
-        for(int i = 0; i < partyInfo.people; i++)
-            embed = embed.addField("- Open", "", false);
+        embed = embed.addField("Participants:", "", false);
+
+        int personCount = 0;
+        for (UserInfo userInfo : partyInfo.getUserList())
+        {
+            embed = embed.addField("", "- " + userInfo.getPingText(), false);
+            personCount++;
+        }
+
+        for(int i = personCount; i < partyInfo.getPeople(); i++)
+            embed = embed.addField("", "- Open", false);
 
 //        embed = embed.addField((EmbedCreateFields.Field) ActionRow.of(Button.primary("test", "")));
 
@@ -233,32 +267,9 @@ public class Main {
         return embed.build();
     }
 
-    record PartyInfo(String type, String id, long people, String server, String host, boolean status)
-    {
-        String getImageURL() {
-            if(type.equals("Fishing"))
-                return "https://palia.wiki.gg/images/thumb/9/97/Currency_Fishing.png/75px-Currency_Fishing.png";
-            if(type.equals("Hunting"))
-                return "https://palia.wiki.gg/images/thumb/8/8b/Currency_Hunting.png/75px-Currency_Hunting.png";
-            if(type.equals("Foraging"))
-                return "https://palia.wiki.gg/images/thumb/b/b0/Currency_Foraging.png/75px-Currency_Foraging.png";
-            if(type.equals("BugCatching"))
-                return "https://palia.wiki.gg/images/thumb/4/47/Currency_Bug.png/75px-Currency_Bug.png";
-
-            return "https://palia.wiki.gg/images/thumb/c/cb/Currency_Cooking.png/75px-Currency_Cooking.png";
-        }
-
-        Color getColor() {
-            if(type.equals("Fishing"))
-                return Color.CYAN;
-            if(type.equals("Hunting"))
-                return Color.DARK_GOLDENROD;
-            if(type.equals("Foraging"))
-                return Color.LIGHT_SEA_GREEN;
-            if(type.equals("BugCatching"))
-                return Color.MOON_YELLOW;
-
-            return Color.PINK;
+    record UserInfo(String id, String name) {
+        String getPingText(){
+            return "<@" + id + ">";
         }
     }
 
