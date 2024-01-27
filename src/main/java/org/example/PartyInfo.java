@@ -3,7 +3,6 @@ package org.example;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.spec.EmbedCreateSpec;
 import discord4j.rest.util.Color;
-import org.checkerframework.checker.units.qual.A;
 
 import java.io.*;
 import java.time.Instant;
@@ -17,16 +16,20 @@ public class PartyInfo implements Serializable
     private long people;
     private String server;
     private boolean status;
+    private String commandGuid;
+    private String timestamp = "";
 
     private List<UserInfo> userList;
 
-    public PartyInfo(TypeInfo type, UserInfo hostInfo, long people, String server, boolean status)
+    public PartyInfo(TypeInfo type, UserInfo hostInfo, long people, String server, boolean status, String commandGuid, String timestamp)
     {
         this.type = type;
         this.hostInfo = hostInfo;
         this.people = people;
         this.server = server;
         this.status = status;
+        this.commandGuid = commandGuid;
+        this.timestamp = timestamp;
 
         this.userList = new ArrayList<>();
     }
@@ -38,21 +41,26 @@ public class PartyInfo implements Serializable
         return new ArrayList<>(infoList);
     }
 
-    public static PartyInfo createFromEvent(ChatInputInteractionEvent event) {
+    public static PartyInfo getPartyInfoByGuid(String guid){
+        return getInfoList().stream().filter(info -> info.getCommandGuid().equals(guid)).findFirst().orElse(null);
+    }
+
+    public static PartyInfo createFromEvent(ChatInputInteractionEvent event, String modalGuid) {
         String userName = event.getInteraction().getUser().getGlobalName().get();
         String userid = event.getInteraction().getUser().getId().asString();
+
         TypeInfo type = TypeInfo.getType(event.getOption("type").get().getValue().get().asString());
-        long people;
-        if(event.getOption("people").isPresent())
-            people = event.getOption("people").get().getValue().get().asLong();
-        else
-            people = 10;
+        long people = 10;
+        if(event.getOption("people").isPresent()) people = event.getOption("people").get().getValue().get().asLong();
+
+        String timestamp = "";
+        if(event.getOption("timestamp").isPresent()) timestamp = event.getOption("timestamp").get().getValue().get().asString();
 
         String server = event.getOption("server").get().getValue().get().asString();
 
         long finalPeople = people;
 
-        PartyInfo info = new PartyInfo(type, new PartyInfo.UserInfo(userid, userName), finalPeople, server, true);
+        PartyInfo info = new PartyInfo(type, new PartyInfo.UserInfo(userid, userName), finalPeople, server, true, modalGuid, timestamp);
         infoList.add(info);
         return info;
     }
@@ -77,8 +85,8 @@ public class PartyInfo implements Serializable
             userList.add(userInfo);
     }
 
-    public void removeUser(UserInfo userInfo){
-        userList.remove(userInfo);
+    public void removeUser(String userid){
+        userList.removeIf(user -> user.getId().equals(userid));
     }
 
 
@@ -93,7 +101,7 @@ public class PartyInfo implements Serializable
                 .color(partyInfo.getColor())
                 .title("Hosted by " + partyInfo.getHostInfo().name + "")
                 .author( "(" + status + ") " + partyInfo.getServer() + " " + partyInfo.getType() + " Party", "", partyInfo.getImageURL())
-                .description(partyInfo.getHostInfo().getPingText() + " is hosting a " + partyInfo.getType() + " party at ___")
+                .description(partyInfo.getHostInfo().getPingText() + " is hosting a " + partyInfo.getType() + " party " + partyInfo.getTimestamp())
                 .thumbnail(partyInfo.getImageURL());
 
         embed = embed.addField("Participants:", "", false);
@@ -179,5 +187,21 @@ public class PartyInfo implements Serializable
     public void setUserList(List<UserInfo> userList)
     {
         this.userList = userList;
+    }
+
+    public String getCommandGuid() {
+        return commandGuid;
+    }
+
+    public void setCommandGuid(String commandGuid) {
+        this.commandGuid = commandGuid;
+    }
+
+    public String getTimestamp() {
+        return timestamp;
+    }
+
+    public void setTimestamp(String timestamp) {
+        this.timestamp = timestamp;
     }
 }

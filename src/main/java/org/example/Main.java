@@ -37,13 +37,13 @@ public class Main {
 
     static final String CHAT_INPUT_COMMAND_NAME = "party";
     static final String MODAL_CUSTOM_ID = "my-modal";
+    static final String REMOVE_MODAL_ID = "removeModal";
     static final String SELECT_CUSTOM_ID = "my-select";
     static final String INPUT_CUSTOM_ID = "my-input";
 
     public static void main( String[] args )
     {
-//        new Timer().schedule(new FileTask(), 0, 300000);
-        new Timer().schedule(new FileTask(), 0, 5000);
+        new Timer().schedule(new FileTask(), 0, 300000);
 
         DiscordClient.create(JSONFile.getJSONValueFromFile("discordAPIKey", "keys.json"))
                 .withGateway(client -> {
@@ -63,10 +63,10 @@ public class Main {
                     Publisher<?> onChatInput = client.on(ChatInputInteractionEvent.class, event -> {
                         if (CHAT_INPUT_COMMAND_NAME.equals(event.getCommandName())) {
                             String commandGuid = Common.createGUID();
-                            PartyInfo partyInfo = PartyInfo.createFromEvent(event);
+                            PartyInfo partyInfo = PartyInfo.createFromEvent(event, commandGuid);
 
-                            String signUpButtonGUID = "signup-" + commandGuid;
-                            String deleteButtonGUID = "delete-" + commandGuid;
+                            String signUpButtonGUID = "signup:" + commandGuid;
+                            String deleteButtonGUID = "delete:" + commandGuid;
                             Button button = Button.primary(signUpButtonGUID, "Sign Up!");
                             Button deleteButton = Button.danger(deleteButtonGUID, "Remove Name");
 
@@ -81,20 +81,24 @@ public class Main {
                     });
 
                     Publisher<?> onModal = client.on(ModalSubmitInteractionEvent.class, event -> {
-                        if (MODAL_CUSTOM_ID.equals(event.getCustomId())) {
-                            String comments = "";
+                        if (REMOVE_MODAL_ID.equals(event.getCustomId())) {
                             for (TextInput component : event.getComponents(TextInput.class)) {
-                                if (INPUT_CUSTOM_ID.equals(component.getCustomId())) {
-                                    comments = component.getValue().orElse("");
+                                String[] fields = component.getCustomId().split("_");
+                                if(fields.length == 3) {
+                                    String commandGuid = fields[1].split(":")[1];
+                                    String userId = fields[2];
+                                    if(!userId.isEmpty() && component.getValue().orElse("").isEmpty()){
+                                        PartyInfo partyInfo = PartyInfo.getPartyInfoByGuid(commandGuid);
+                                        if(partyInfo != null){
+                                            partyInfo.removeUser(userId);
+
+                                            return event.edit("")
+                                                    .withEmbeds(partyInfo.createEmbed());
+//                                                    .withComponents(ActionRow.of(button, deleteButton));
+                                        }
+                                    }
                                 }
-                            }
-                            for (SelectMenu component : event.getComponents(SelectMenu.class)) {
-                                if (SELECT_CUSTOM_ID.equals(component.getCustomId())) {
-                                    return event.reply("You selected: " +
-                                                    component.getValues().orElse(emptyList()) +
-                                                    (comments.isEmpty() ? "" : "\nwith a comment: " + comments))
-                                            .withEphemeral(true);
-                                }
+
                             }
                         }
                         return Mono.empty();
@@ -161,14 +165,14 @@ public class Main {
 
                             InteractionPresentModalSpec.Builder spec = InteractionPresentModalSpec.builder()
                                     .title("Remove User from event: ")
-                                    .customId(MODAL_CUSTOM_ID);
+                                    .customId(REMOVE_MODAL_ID);
 
                             for (PartyInfo.UserInfo userInfo : partyInfo.getUserList())
-                                spec.addComponent(ActionRow.of(TextInput.small("text-" + userInfo.getId(), userInfo.getName(), "Removed").required(false).prefilled(userInfo.getName())));
+                                spec.addComponent(ActionRow.of(TextInput.small(REMOVE_MODAL_ID + "_" + signUpButtonGUID + "_" + userInfo.getId(), userInfo.getName(), "Removed").required(false).prefilled(userInfo.getName())));
 
                             return buttonEvent.presentModal(spec.build());
                         } else {
-                            partyInfo.removeUser(new PartyInfo.UserInfo(buttonUserid, buttonUserName));
+                            partyInfo.removeUser(buttonUserid);
                         }
 
                         return buttonEvent.edit("")
@@ -191,6 +195,7 @@ public class Main {
         options.add(ApplicationCommandOptionData.builder().name("server").description("server").type(ApplicationCommandOption.Type.STRING.getValue()).autocomplete(true).required(true).build());
         options.add(ApplicationCommandOptionData.builder().name("people").description("# of People").type(ApplicationCommandOption.Type.INTEGER.getValue()).autocomplete(false).required(false).build());
         options.add(ApplicationCommandOptionData.builder().name("quantity").description("quantity").type(ApplicationCommandOption.Type.INTEGER.getValue()).autocomplete(false).required(false).build());
+        options.add(ApplicationCommandOptionData.builder().name("timestamp").description("Timestamp").type(ApplicationCommandOption.Type.STRING.getValue()).autocomplete(false).required(false).build());
 
         return options;
     }
