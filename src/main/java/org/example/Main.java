@@ -24,6 +24,7 @@ import discord4j.rest.interaction.GuildCommandRegistrar;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Mono;
 
+import java.io.ObjectOutputStream;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.TimeoutException;
@@ -41,6 +42,9 @@ public class Main {
 
     public static void main( String[] args )
     {
+//        new Timer().schedule(new FileTask(), 0, 300000);
+        new Timer().schedule(new FileTask(), 0, 5000);
+
         DiscordClient.create(JSONFile.getJSONValueFromFile("discordAPIKey", "keys.json"))
                 .withGateway(client -> {
 //                Mono<Void> handlePingCommand = createPingCommand(client);
@@ -64,7 +68,7 @@ public class Main {
                             String signUpButtonGUID = "signup-" + commandGuid;
                             String deleteButtonGUID = "delete-" + commandGuid;
                             Button button = Button.primary(signUpButtonGUID, "Sign Up!");
-                            Button deleteButton = Button.danger(deleteButtonGUID, "Remove");
+                            Button deleteButton = Button.danger(deleteButtonGUID, "Remove Name");
 
                             Mono<Void> buttonListener = createButtonListener(client, signUpButtonGUID, partyInfo, button, deleteButton, deleteButtonGUID);
 
@@ -160,7 +164,7 @@ public class Main {
                                     .customId(MODAL_CUSTOM_ID);
 
                             for (PartyInfo.UserInfo userInfo : partyInfo.getUserList())
-                                spec.addComponent(ActionRow.of(TextInput.small("text-" + userInfo.getId(), userInfo.getName(), userInfo.getName()).prefilled(userInfo.getName())));
+                                spec.addComponent(ActionRow.of(TextInput.small("text-" + userInfo.getId(), userInfo.getName(), "Removed").required(false).prefilled(userInfo.getName())));
 
                             return buttonEvent.presentModal(spec.build());
                         } else {

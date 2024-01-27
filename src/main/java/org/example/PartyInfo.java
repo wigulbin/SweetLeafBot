@@ -3,12 +3,14 @@ package org.example;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.spec.EmbedCreateSpec;
 import discord4j.rest.util.Color;
+import org.checkerframework.checker.units.qual.A;
 
+import java.io.*;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
-public class PartyInfo
+public class PartyInfo implements Serializable
 {
     private TypeInfo type;
     private UserInfo hostInfo;
@@ -29,6 +31,13 @@ public class PartyInfo
         this.userList = new ArrayList<>();
     }
 
+    private static List<PartyInfo> infoList = new ArrayList<>();
+    public static List<PartyInfo> getInfoList(){
+        if(infoList.isEmpty()) infoList = Fileable.readFromFile(PartyInfo.class);
+
+        return new ArrayList<>(infoList);
+    }
+
     public static PartyInfo createFromEvent(ChatInputInteractionEvent event) {
         String userName = event.getInteraction().getUser().getGlobalName().get();
         String userid = event.getInteraction().getUser().getId().asString();
@@ -43,7 +52,9 @@ public class PartyInfo
 
         long finalPeople = people;
 
-        return new PartyInfo(type, new PartyInfo.UserInfo(userid, userName), finalPeople, server, true);
+        PartyInfo info = new PartyInfo(type, new PartyInfo.UserInfo(userid, userName), finalPeople, server, true);
+        infoList.add(info);
+        return info;
     }
 
 
@@ -105,7 +116,7 @@ public class PartyInfo
     }
 
 
-    public record UserInfo(String id, String name) {
+    public record UserInfo(String id, String name) implements Serializable {
         String getId(){return id;}
         String getName(){return name;}
         String getPingText(){

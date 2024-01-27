@@ -3,11 +3,12 @@ package org.example;
 import discord4j.rest.util.Color;
 import me.xdrop.fuzzywuzzy.FuzzySearch;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-public class TypeInfo {
+public class TypeInfo implements Serializable {
     private String code = "";
     private String name = "";
 
