@@ -1,5 +1,7 @@
 package org.example;
 
+import java.util.UUID;
+
 public class Common {
 
     public static int parseInt(String num) {
@@ -15,5 +17,17 @@ public class Common {
         } catch (Exception e){}
 
         return 0;
+    }
+
+    public static String removeSpaces(String string){
+        return string.replaceAll(" ", "");
+    }
+
+    public static String normalizeString(String string){
+        return string.replaceAll(" ", "").toLowerCase();
+    }
+
+    public static String createGUID(){
+        return UUID.randomUUID().toString();
     }
 }

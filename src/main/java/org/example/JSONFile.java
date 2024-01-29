@@ -49,4 +49,14 @@ public class JSONFile {
 
         return "";
     }
+
+    public static String getJSONString(String fileName){
+        try{
+            return Files.readString(Path.of(getResourcePath(fileName)));
+        } catch (Exception e){
+            System.out.println(e);
+        }
+
+        return "";
+    }
 }

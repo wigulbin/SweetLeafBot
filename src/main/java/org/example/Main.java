@@ -13,213 +13,259 @@ import discord4j.core.object.command.ApplicationCommandOption;
 import discord4j.core.object.component.*;
 import discord4j.core.object.entity.Message;
 import discord4j.core.object.entity.User;
-import discord4j.core.object.entity.channel.GuildMessageChannel;
-import discord4j.core.spec.*;
-import discord4j.discordjson.json.*;
+import discord4j.core.spec.InteractionPresentModalSpec;
+import discord4j.discordjson.json.ApplicationCommandOptionChoiceData;
+import discord4j.discordjson.json.ApplicationCommandOptionData;
+import discord4j.discordjson.json.ApplicationCommandRequest;
 import discord4j.rest.interaction.GuildCommandRegistrar;
-import discord4j.rest.util.Color;
+import me.xdrop.fuzzywuzzy.FuzzySearch;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Mono;
 
-import javax.swing.*;
 import java.time.Duration;
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.TimeoutException;
-
-import static java.util.Collections.emptyList;
 
 public class Main {
     private static final String token = System.getenv("token");
-    private static final long guildId = Long.parseLong("937741716042174486");
+    //    private static final long guildId = Long.parseLong("937741716042174486");
+    private static final long guildId = Long.parseLong("1151985071272763452");
 
     static final String CHAT_INPUT_COMMAND_NAME = "party";
     static final String MODAL_CUSTOM_ID = "my-modal";
+    static final String REMOVE_MODAL_ID = "removeModal";
     static final String SELECT_CUSTOM_ID = "my-select";
     static final String INPUT_CUSTOM_ID = "my-input";
 
     public static void main( String[] args )
     {
+        Recipes.loadRecipesFromFile();
+        FileTask.loadObjectsFromFile();
+
         DiscordClient.create(JSONFile.getJSONValueFromFile("discordAPIKey", "keys.json"))
                 .withGateway(client -> {
-//                Mono<Void> handlePingCommand = createPingCommand(client);
-//                return handlePingCommand;
+                    if(guildId == 0){
+                        Mono<Void> handlePingCommand = createPingCommand(client);
+                        return handlePingCommand;
+                    } else {
+                        System.out.println(client);
+                        List<ApplicationCommandOptionData> options = getApplicationCommandOptionData();
 
-//                    List<String> types = List.of("fishing", "hunting", "applepie", "cake");
-                    List<ApplicationCommandOptionData> options = getApplicationCommandOptionData();
+                        ApplicationCommandRequest example = ApplicationCommandRequest.builder()
+                                .name(CHAT_INPUT_COMMAND_NAME)
+                                .addAllOptions(options)
+                                .description("Create a party for Palia")
+                                .build();
 
-                    ApplicationCommandRequest example = ApplicationCommandRequest.builder()
-                            .name(CHAT_INPUT_COMMAND_NAME)
-                            .addAllOptions(options)
-                            .description("Create a party for Palia")
-                            .build();
+                        List<ApplicationCommandRequest> commands = Collections.singletonList(example);
 
-                    List<ApplicationCommandRequest> commands = Collections.singletonList(example);
+                        Publisher<?> onChatInput = client.on(ChatInputInteractionEvent.class, event -> {
+                            if (CHAT_INPUT_COMMAND_NAME.equals(event.getCommandName())) {
+                                String commandGuid = Common.createGUID();
+                                PartyInfo partyInfo = PartyInfo.createFromEvent(event, commandGuid);
 
-                    Publisher<?> onChatInput = client.on(ChatInputInteractionEvent.class, event -> {
-                        if (CHAT_INPUT_COMMAND_NAME.equals(event.getCommandName())) {
-                            String userName = event.getInteraction().getUser().getGlobalName().get();
-                            String userid = event.getInteraction().getUser().getId().asString();
-                            String type = event.getOption("type").get().getValue().get().asString();
-                            long people;
-                            if(event.getOption("people").isPresent())
-                                people = event.getOption("people").get().getValue().get().asLong();
-                            else
-                                people = 10;
+                                ButtonInfo buttonInfo = createButtons(client, partyInfo, commandGuid);
 
-                            String server = event.getOption("server").get().getValue().get().asString();
+                                return event.reply()
+                                        .withEmbeds(partyInfo.createEmbed())
+//                                    .withComponents(ActionRow.of(buttonInfo.buttons))
+                                        .withComponents(buttonInfo.getActionRows())
+                                        .then(buttonInfo.listener);
+                            }
+                            return Mono.empty();
+                        });
 
-                            long finalPeople = people;
-//                            return client.getChannelById(Snowflake.of(event.getInteraction().getChannelId().asLong()))
-//                                    .ofType(GuildMessageChannel.class)
-//                                    .flatMap(channel -> channel.createMessage(createPartyEmbed(new PartyInfo(type, userid, finalPeople, server, userName, true))));
+                        Publisher<?> onModal = client.on(ModalSubmitInteractionEvent.class, event -> {
+                            if (REMOVE_MODAL_ID.equals(event.getCustomId())) {
+                                for (TextInput component : event.getComponents(TextInput.class)) {
+                                    String[] fields = component.getCustomId().split("_");
+                                    if(fields.length == 3) {
+                                        String commandGuid = fields[1].split(":")[1];
+                                        String userId = fields[2];
+                                        if(!userId.isEmpty() && component.getValue().orElse("").isEmpty()){
+                                            PartyInfo partyInfo = PartyInfo.getPartyInfoByGuid(commandGuid);
+                                            if(partyInfo != null){
+                                                partyInfo.removeUser(userId);
 
+                                                return event.edit("")
+                                                        .withEmbeds(partyInfo.createEmbed());
+//                                                    .withComponents(ActionRow.of(button, deleteButton));
+                                            }
+                                        }
+                                    }
 
-                            Button button = Button.primary("custom-id", "Sign Up!");
-                            Button deleteButton = Button.danger("delete-id", "Remove");
-                            return client.getChannelById(Snowflake.of(event.getInteraction().getChannelId().asLong()))
-                                    .ofType(GuildMessageChannel.class)
-                                    .flatMap(channel -> {
-                                        PartyInfo partyInfo = new PartyInfo(type, new UserInfo(userid, userName), finalPeople, server, true);
-
-                                        MessageCreateSpec messageSpec = MessageCreateSpec.builder()
-                                                // Buttons must be in action rows
-                                                .addEmbed(createPartyEmbed(partyInfo))
-                                                .addComponent(ActionRow.of(button, deleteButton)).build();
-
-                                        Mono<Message> messageMono = channel.createMessage(messageSpec);
-
-                                        Mono<Void> buttonListener = client.on(ButtonInteractionEvent.class, buttonEvent -> {
-                                                    if (buttonEvent.getCustomId().equals("custom-id"))
-                                                    {
-                                                        String buttonUserName = buttonEvent.getInteraction().getUser().getGlobalName().get();
-                                                        String buttonUserid = buttonEvent.getInteraction().getUser().getId().asString();
-
-                                                        partyInfo.addUser(new UserInfo(buttonUserid, buttonUserName));
-
-                                                        return buttonEvent.edit("")
-                                                                .withEmbeds(createPartyEmbed(partyInfo))
-                                                                .withComponents(ActionRow.of(button, deleteButton));
-                                                    }
-
-                                                    if (buttonEvent.getCustomId().equals("delete-id")) {
-                                                        String buttonUserName = buttonEvent.getInteraction().getUser().getGlobalName().get();
-                                                        String buttonUserid = buttonEvent.getInteraction().getUser().getId().asString();
-
-                                                        if(buttonUserid.equals(partyInfo.getHostInfo().id)){
-
-                                                            InteractionPresentModalSpec.Builder spec = InteractionPresentModalSpec.builder()
-                                                                    .title("Remove User from event: ")
-                                                                    .customId(MODAL_CUSTOM_ID);
-
-                                                            for (UserInfo userInfo : partyInfo.getUserList())
-                                                                spec.addComponent(ActionRow.of(TextInput.small("text-" + userInfo.id, userInfo.name, userInfo.name).prefilled(userInfo.name)));
-
-                                                            return buttonEvent.presentModal(spec.build());
-                                                        } else {
-                                                            partyInfo.removeUser(new UserInfo(buttonUserid, buttonUserName));
-                                                        }
-
-                                                        return buttonEvent.edit("")
-                                                                .withEmbeds(createPartyEmbed(partyInfo))
-                                                                .withComponents(ActionRow.of(button, deleteButton));
-
-                                                    }
-                                                    // Ignore it
-                                                    return Mono.empty();
-
-                                                }).timeout(Duration.ofMinutes(30))
-                                                .onErrorResume(TimeoutException.class, ignore -> Mono.empty())
-                                                .then();
-
-
-                                        return messageMono.then(buttonListener);
-                                    });
-
-
-//                            return event.presentModal(InteractionPresentModalSpec.builder()
-//                                    .title(type + " event for " + quantity)
-//                                    .customId(MODAL_CUSTOM_ID)
-//                                    .addComponent(ActionRow.of(TextInput.small(INPUT_CUSTOM_ID, "When is this event taking place?").required(false)))
-//                                    .build());
-                        }
-                        return Mono.empty();
-                    });
-
-                    Publisher<?> onModal = client.on(ModalSubmitInteractionEvent.class, event -> {
-                        if (MODAL_CUSTOM_ID.equals(event.getCustomId())) {
-                            String comments = "";
-                            for (TextInput component : event.getComponents(TextInput.class)) {
-                                if (INPUT_CUSTOM_ID.equals(component.getCustomId())) {
-                                    comments = component.getValue().orElse("");
                                 }
                             }
-                            for (SelectMenu component : event.getComponents(SelectMenu.class)) {
-                                if (SELECT_CUSTOM_ID.equals(component.getCustomId())) {
-                                    return event.reply("You selected: " +
-                                                    component.getValues().orElse(emptyList()) +
-                                                    (comments.isEmpty() ? "" : "\nwith a comment: " + comments))
-                                            .withEphemeral(true);
+                            return Mono.empty();
+                        });
+
+                        Publisher<?> onChat = client.on(ChatInputAutoCompleteEvent.class, event -> {
+                            if (event.getCommandName().equals(CHAT_INPUT_COMMAND_NAME)) {
+                                // Get the string value of what the user is currently typing
+                                String typing = event.getFocusedOption().getValue()
+                                        .map(ApplicationCommandInteractionOptionValue::asString)
+                                        .orElse("").toLowerCase(); // In case the user has not started typing, we return an empty string
+
+                                List<ApplicationCommandOptionChoiceData> suggestions = new ArrayList<>();
+
+                                if(event.getFocusedOption().getName().equals("type"))
+                                {
+                                    List<TypeInfo> types = TypeInfo.getOrCreateTypeCodes();
+                                    types.stream()
+                                            .sorted((s1, s2) -> TypeInfo.compareTypes(s1, s2, typing))
+                                            .map(s -> ApplicationCommandOptionChoiceData.builder().name(s.getName()).value(s.getCode()).build())
+                                            .forEach(suggestions::add);
                                 }
+
+                                if(event.getFocusedOption().getName().equals("server"))
+                                {
+                                    suggestions.add(ApplicationCommandOptionChoiceData.builder().name("NA").value("NA").build());
+                                    suggestions.add(ApplicationCommandOptionChoiceData.builder().name("EU").value("EU").build());
+                                    suggestions.add(ApplicationCommandOptionChoiceData.builder().name("PA").value("PA").build());
+                                }
+
+                                if(event.getFocusedOption().getName().equals("recipe"))
+                                {
+                                    Recipes.getRecipeList().stream()
+                                            .map(Recipe::getRecipeName)
+                                            .sorted((s1, s2) -> compareTypes(s1, s2, typing))
+                                            .map(s -> ApplicationCommandOptionChoiceData.builder().name(s).value(normalize(s)).build())
+                                            .forEach(suggestions::add);
+                                }
+
+
+                                // Finally, return the list of choices to the user
+                                return event.respondWithSuggestions(suggestions);
                             }
-                        }
-                        return Mono.empty();
-                    });
+                            return null;
+                        });
 
-                    Publisher<?> onChat = client.on(ChatInputAutoCompleteEvent.class, event -> {
-                        if (event.getCommandName().equals(CHAT_INPUT_COMMAND_NAME)) {
-                            // Get the string value of what the user is currently typing
-                            String typing = event.getFocusedOption().getValue()
-                                    .map(ApplicationCommandInteractionOptionValue::asString)
-                                    .orElse(""); // In case the user has not started typing, we return an empty string
-
-                            /*
-                            Build a list of choices to present to the user as suggested input
-
-                            For the sake of simplicity in this demo, we are returning a static list here.
-                            Ideally you would use fuzzy matching or other techniques to suggest up to 25 choices for the user.
-                            */
-                            List<ApplicationCommandOptionChoiceData> suggestions = new ArrayList<>();
-
-                            if(event.getFocusedOption().getName().equals("type"))
-                            {
-                                suggestions.add(ApplicationCommandOptionChoiceData.builder().name("Fishing").value("Fishing").build());
-                                suggestions.add(ApplicationCommandOptionChoiceData.builder().name("Hunting").value("Hunting").build());
-                                suggestions.add(ApplicationCommandOptionChoiceData.builder().name("Foraging").value("Foraging").build());
-                                suggestions.add(ApplicationCommandOptionChoiceData.builder().name("Bug Catching").value("BugCatching").build());
-                                suggestions.add(ApplicationCommandOptionChoiceData.builder().name("Apple Pie").value("ApplePie").build());
-                                suggestions.add(ApplicationCommandOptionChoiceData.builder().name("Cake").value("Cake").build());
-                            }
-
-                            if(event.getFocusedOption().getName().equals("server"))
-                            {
-                                suggestions.add(ApplicationCommandOptionChoiceData.builder().name("NA").value("NA").build());
-                                suggestions.add(ApplicationCommandOptionChoiceData.builder().name("EU").value("EU").build());
-                                suggestions.add(ApplicationCommandOptionChoiceData.builder().name("PA").value("PA").build());
-                            }
-
-                            if(event.getFocusedOption().getName().equals("host"))
-                            {
-                                suggestions.add(ApplicationCommandOptionChoiceData.builder().name("NA").value("NA").build());
-                                suggestions.add(ApplicationCommandOptionChoiceData.builder().name("EU").value("EU").build());
-                                suggestions.add(ApplicationCommandOptionChoiceData.builder().name("PA").value("PA").build());
-                            }
-
-                            // Finally, return the list of choices to the user
-                            return event.respondWithSuggestions(suggestions);
-                        }
-                        return null;
-                    });
-
-                    return GuildCommandRegistrar.create(client.getRestClient(), commands)
-                            .registerCommands(Snowflake.of(guildId))
+                        return GuildCommandRegistrar.create(client.getRestClient(), commands)
+                                .registerCommands(Snowflake.of(guildId))
 //                            .thenMany(Mono.when(onChatInput, onModal));
-                            .thenMany(Mono.when(onChatInput, onModal, onChat));
+                                .thenMany(Mono.when(onChatInput, onModal, onChat));
+                    }
                 })
                 .block();
+    }
+
+    public static String normalize(String string){
+        return Common.removeSpaces(string).toLowerCase();
+    }
+
+    public static int compareTypes(String s1, String s2, String comparison){
+        String name1 = s1.toLowerCase();
+        String name2 = s2.toLowerCase();
+
+        if(name1.startsWith(comparison)) return -1;
+        if(name2.startsWith(comparison)) return 1;
+
+        return -1 * Integer.compare(FuzzySearch.ratio(name1, comparison), FuzzySearch.ratio(name2, comparison));
+    }
+
+
+    private static ButtonInfo createButtons(GatewayDiscordClient client, PartyInfo partyInfo, String commandGuid) {
+        List<Button> buttons = new ArrayList<>();
+
+        String signUpButtonGUID     = "signup:" + commandGuid;
+        String signUpRoleButtonGUIDBase = "signupRole:" + commandGuid + ":";
+        String deleteButtonGUID     = "delete:" + commandGuid;
+
+        List<Button> roleButtons = new ArrayList<>();
+        if(partyInfo.getRecipe() != null) {
+            Recipe recipe = partyInfo.getRecipe();
+            System.out.println(recipe.getRecipeName());
+            int id = 0;
+            for (RecipeRole role : recipe.getRoles()) {
+                roleButtons.add(Button.primary(signUpRoleButtonGUIDBase + (id++), role.getRoleName()));
+            }
+        } else {
+            Button button = Button.primary(signUpButtonGUID, "Sign Up!");
+            buttons.add(button);
+        }
+
+        buttons.addAll(roleButtons);
+
+        Button deleteButton = Button.danger(deleteButtonGUID, "Remove Name");
+        buttons.add(deleteButton);
+
+        // Issues with adding self to multiple roles (got stuck with 4 and could not add more)
+        Mono<Void> buttonListener = client.on(ButtonInteractionEvent.class, buttonEvent -> {
+                    if (buttonEvent.getCustomId().equals(signUpButtonGUID)) {
+                        String buttonUserName = buttonEvent.getInteraction().getUser().getGlobalName().get();
+                        String buttonUserid = buttonEvent.getInteraction().getUser().getId().asString();
+
+                        partyInfo.addUser(new PartyInfo.UserInfo(buttonUserid, buttonUserName, ""));
+                        return buttonEvent.edit("")
+                                .withEmbeds(partyInfo.createEmbed());
+//                                .withComponents(ActionRow.of(buttons));
+                    }
+
+                    if (buttonEvent.getCustomId().startsWith(signUpRoleButtonGUIDBase)) {
+                        String buttonUserName = buttonEvent.getInteraction().getUser().getGlobalName().get();
+                        String buttonUserid = buttonEvent.getInteraction().getUser().getId().asString();
+                        String buttonValue = "";
+                        if(buttonEvent.getCustomId().split(":").length > 2)
+                            buttonValue = buttonEvent.getCustomId().split(":")[2];
+
+                        partyInfo.addUser(new PartyInfo.UserInfo(buttonUserid, buttonUserName, buttonValue));
+
+                        return buttonEvent.edit("")
+                                .withEmbeds(partyInfo.createEmbed());
+//                                .withComponents(ActionRow.of(buttons));
+                    }
+
+                    if (buttonEvent.getCustomId().equals(deleteButtonGUID)) {
+                        String buttonUserid = buttonEvent.getInteraction().getUser().getId().asString();
+
+                        if (buttonUserid.equals(partyInfo.getHostInfo().getId())) {
+
+                            InteractionPresentModalSpec.Builder spec = InteractionPresentModalSpec.builder()
+                                    .title("Remove User from event: ")
+                                    .customId(REMOVE_MODAL_ID);
+
+                            for (PartyInfo.UserInfo userInfo : partyInfo.getUserList())
+                                spec.addComponent(ActionRow.of(TextInput.small(REMOVE_MODAL_ID + "_" + signUpButtonGUID + "_" + userInfo.getId(), userInfo.getName(), "Removed").required(false).prefilled(userInfo.getName())));
+
+                            return buttonEvent.presentModal(spec.build());
+                        } else {
+                            partyInfo.removeUser(buttonUserid);
+                        }
+
+                        return buttonEvent.edit("")
+                                .withEmbeds(partyInfo.createEmbed());
+//                                .withComponents(ActionRow.of(buttons));
+
+                    }
+
+                    // Ignore it
+                    return Mono.empty();
+
+                })
+                .timeout(Duration.ofDays(3))      //Change to be date set for - date submitted
+                .onErrorResume(TimeoutException.class, ignore -> Mono.empty())
+                .then();
+
+        return new ButtonInfo(buttonListener, buttons);
+    }
+
+    record ButtonInfo(Mono<Void> listener, List<Button> buttons){
+        public List<LayoutComponent> getActionRows(){
+            if(buttons.size() <= 5){
+                return List.of(ActionRow.of(buttons));
+            }
+
+            List<LayoutComponent> actionRows = new ArrayList<>();
+            try{
+                for(int i = 0; i < buttons.size(); i+= 5){
+                    actionRows.add(ActionRow.of(buttons.subList(i, i + Math.min(5, buttons.size()-i))));
+                }
+            } catch (Exception e){
+                System.out.println(e);
+            }
+
+            return actionRows;
+        }
     }
 
     private static List<ApplicationCommandOptionData> getApplicationCommandOptionData() {
@@ -228,50 +274,14 @@ public class Main {
         options.add(ApplicationCommandOptionData.builder().name("type").description("type").type(ApplicationCommandOption.Type.STRING.getValue()).autocomplete(true).required(true).build());
         options.add(ApplicationCommandOptionData.builder().name("server").description("server").type(ApplicationCommandOption.Type.STRING.getValue()).autocomplete(true).required(true).build());
         options.add(ApplicationCommandOptionData.builder().name("people").description("# of People").type(ApplicationCommandOption.Type.INTEGER.getValue()).autocomplete(false).required(false).build());
+        options.add(ApplicationCommandOptionData.builder().name("timestamp").description("Timestamp").type(ApplicationCommandOption.Type.STRING.getValue()).autocomplete(false).required(false).build());
+        options.add(ApplicationCommandOptionData.builder().name("recipe").description("Recipe").type(ApplicationCommandOption.Type.STRING.getValue()).autocomplete(true).required(false).build());
         options.add(ApplicationCommandOptionData.builder().name("quantity").description("quantity").type(ApplicationCommandOption.Type.INTEGER.getValue()).autocomplete(false).required(false).build());
-//        options.add(ApplicationCommandOptionData.builder().name("host").description("host").type(ApplicationCommandOption.Type.STRING.getValue()).autocomplete(true).required(true).build());
-
 
         return options;
     }
 
-    public static EmbedCreateSpec createPartyEmbed(PartyInfo partyInfo)
-    {
-        String status = "Open";
-        if(!partyInfo.isStatus())
-            status = "Closed";
 
-        EmbedCreateSpec.Builder embed = EmbedCreateSpec.builder()
-                .color(partyInfo.getColor())
-                .title("Hosted by " + partyInfo.getHostInfo().name + "")
-                .author( "(" + status + ") " + partyInfo.getServer() + " " + partyInfo.getType() + " Party", "", partyInfo.getImageURL())
-                .description(partyInfo.getHostInfo().getPingText() + " is hosting a " + partyInfo.getType() + " party at ___")
-                .thumbnail(partyInfo.getImageURL());
-
-        embed = embed.addField("Participants:", "", false);
-
-        int personCount = 0;
-        for (UserInfo userInfo : partyInfo.getUserList())
-        {
-            embed = embed.addField("", "- " + userInfo.getPingText(), false);
-            personCount++;
-        }
-
-        for(int i = personCount; i < partyInfo.getPeople(); i++)
-            embed = embed.addField("", "- Open", false);
-
-//        embed = embed.addField((EmbedCreateFields.Field) ActionRow.of(Button.primary("test", "")));
-
-        embed = embed.timestamp(Instant.now());
-
-        return embed.build();
-    }
-
-    record UserInfo(String id, String name) {
-        String getPingText(){
-            return "<@" + id + ">";
-        }
-    }
 
 
     private static Mono<Void> createPingCommand(GatewayDiscordClient gateway) {
@@ -283,6 +293,7 @@ public class Main {
                 System.out.println(user.getUsername() + ": " + message.getContent());
             }
 
+            System.out.println(message.getGuildId().get().asString());
             if (message.getContent().equals("!ping"))
                 return message.getChannel().flatMap(channel -> channel.createMessage("pong!"));
 
