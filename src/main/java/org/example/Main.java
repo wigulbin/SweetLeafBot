@@ -37,7 +37,6 @@ public class Main {
     static final String SELECT_CUSTOM_ID = "my-select";
     static final String INPUT_CUSTOM_ID = "my-input";
 
-    //  "discordAPIKey": "NDM4MTI2OTU4NjgyMDQ2NDY1.GfErSC.vHSjHQG0Uiuchv5WzbRCxAtc9WJadDc3SZL6aA"
     public static void main( String[] args )
     {
         Recipes.loadRecipesFromFile();
