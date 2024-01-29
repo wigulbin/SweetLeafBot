@@ -10,10 +10,7 @@ import discord4j.core.event.domain.interaction.ModalSubmitInteractionEvent;
 import discord4j.core.event.domain.message.MessageCreateEvent;
 import discord4j.core.object.command.ApplicationCommandInteractionOptionValue;
 import discord4j.core.object.command.ApplicationCommandOption;
-import discord4j.core.object.component.ActionRow;
-import discord4j.core.object.component.Button;
-import discord4j.core.object.component.SelectMenu;
-import discord4j.core.object.component.TextInput;
+import discord4j.core.object.component.*;
 import discord4j.core.object.entity.Message;
 import discord4j.core.object.entity.User;
 import discord4j.core.spec.InteractionPresentModalSpec;
@@ -21,15 +18,13 @@ import discord4j.discordjson.json.ApplicationCommandOptionChoiceData;
 import discord4j.discordjson.json.ApplicationCommandOptionData;
 import discord4j.discordjson.json.ApplicationCommandRequest;
 import discord4j.rest.interaction.GuildCommandRegistrar;
+import me.xdrop.fuzzywuzzy.FuzzySearch;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Mono;
 
-import java.io.ObjectOutputStream;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.TimeoutException;
-
-import static java.util.Collections.emptyList;
 
 public class Main {
     private static final String token = System.getenv("token");
@@ -43,7 +38,8 @@ public class Main {
 
     public static void main( String[] args )
     {
-        new Timer().schedule(new FileTask(), 0, 300000);
+        Recipes.loadRecipesFromFile();
+        FileTask.loadObjectsFromFile();
 
         DiscordClient.create(JSONFile.getJSONValueFromFile("discordAPIKey", "keys.json"))
                 .withGateway(client -> {
@@ -65,17 +61,13 @@ public class Main {
                             String commandGuid = Common.createGUID();
                             PartyInfo partyInfo = PartyInfo.createFromEvent(event, commandGuid);
 
-                            String signUpButtonGUID = "signup:" + commandGuid;
-                            String deleteButtonGUID = "delete:" + commandGuid;
-                            Button button = Button.primary(signUpButtonGUID, "Sign Up!");
-                            Button deleteButton = Button.danger(deleteButtonGUID, "Remove Name");
-
-                            Mono<Void> buttonListener = createButtonListener(client, signUpButtonGUID, partyInfo, button, deleteButton, deleteButtonGUID);
+                            ButtonInfo buttonInfo = createButtons(client, partyInfo, commandGuid);
 
                             return event.reply()
                                     .withEmbeds(partyInfo.createEmbed())
-                                    .withComponents(ActionRow.of(button, deleteButton))
-                                    .then(buttonListener);
+//                                    .withComponents(ActionRow.of(buttonInfo.buttons))
+                                    .withComponents(buttonInfo.getActionRows())
+                                    .then(buttonInfo.listener);
                         }
                         return Mono.empty();
                     });
@@ -129,6 +121,15 @@ public class Main {
                                 suggestions.add(ApplicationCommandOptionChoiceData.builder().name("PA").value("PA").build());
                             }
 
+                            if(event.getFocusedOption().getName().equals("recipe"))
+                            {
+                                Recipes.getRecipeList().stream()
+                                        .map(Recipe::getRecipeName)
+                                        .sorted((s1, s2) -> compareTypes(s1, s2, typing))
+                                        .map(s -> ApplicationCommandOptionChoiceData.builder().name(s).value(normalize(s)).build())
+                                        .forEach(suggestions::add);
+                            }
+
 
                             // Finally, return the list of choices to the user
                             return event.respondWithSuggestions(suggestions);
@@ -144,21 +145,76 @@ public class Main {
                 .block();
     }
 
-    private static Mono<Void> createButtonListener(GatewayDiscordClient client, String signUpButtonGUID, PartyInfo partyInfo, Button button, Button deleteButton, String deleteButtonGUID) {
-        return client.on(ButtonInteractionEvent.class, buttonEvent -> {
+    public static String normalize(String string){
+        return Common.removeSpaces(string).toLowerCase();
+    }
+
+    public static int compareTypes(String s1, String s2, String comparison){
+        String name1 = s1.toLowerCase();
+        String name2 = s2.toLowerCase();
+
+        if(name1.startsWith(comparison)) return -1;
+        if(name2.startsWith(comparison)) return 1;
+
+        return -1 * Integer.compare(FuzzySearch.ratio(name1, comparison), FuzzySearch.ratio(name2, comparison));
+    }
+
+
+    private static ButtonInfo createButtons(GatewayDiscordClient client, PartyInfo partyInfo, String commandGuid) {
+        List<Button> buttons = new ArrayList<>();
+
+        String signUpButtonGUID     = "signup:" + commandGuid;
+        String signUpRoleButtonGUIDBase = "signupRole:" + commandGuid + ":";
+        String deleteButtonGUID     = "delete:" + commandGuid;
+
+        List<Button> roleButtons = new ArrayList<>();
+        if(partyInfo.getRecipe() != null) {
+            Recipe recipe = partyInfo.getRecipe();
+            System.out.println(recipe.getRecipeName());
+            int id = 0;
+            for (RecipeRole role : recipe.getRoles()) {
+                roleButtons.add(Button.primary(signUpRoleButtonGUIDBase + (id++), role.getRoleName()));
+            }
+        } else {
+            Button button = Button.primary(signUpButtonGUID, "Sign Up!");
+            buttons.add(button);
+        }
+
+        buttons.addAll(roleButtons);
+
+        Button deleteButton = Button.danger(deleteButtonGUID, "Remove Name");
+        buttons.add(deleteButton);
+
+        for (Button button1 : buttons) {
+            System.out.println(button1.getCustomId() + " - " + button1.getLabel());
+        }
+
+        Mono<Void> buttonListener = client.on(ButtonInteractionEvent.class, buttonEvent -> {
                     if (buttonEvent.getCustomId().equals(signUpButtonGUID)) {
                         String buttonUserName = buttonEvent.getInteraction().getUser().getGlobalName().get();
                         String buttonUserid = buttonEvent.getInteraction().getUser().getId().asString();
 
-                        partyInfo.addUser(new PartyInfo.UserInfo(buttonUserid, buttonUserName));
+                        partyInfo.addUser(new PartyInfo.UserInfo(buttonUserid, buttonUserName, ""));
+                        return buttonEvent.edit("")
+                                .withEmbeds(partyInfo.createEmbed());
+//                                .withComponents(ActionRow.of(buttons));
+                    }
+
+                    if (buttonEvent.getCustomId().startsWith(signUpRoleButtonGUIDBase)) {
+                        String buttonUserName = buttonEvent.getInteraction().getUser().getGlobalName().get();
+                        String buttonUserid = buttonEvent.getInteraction().getUser().getId().asString();
+                        String buttonValue = "";
+                        if(buttonEvent.getCustomId().split(":").length > 2)
+                            buttonValue = buttonEvent.getCustomId().split(":")[2];
+
+                        partyInfo.addUser(new PartyInfo.UserInfo(buttonUserid, buttonUserName, buttonValue));
 
                         return buttonEvent.edit("")
-                                .withEmbeds(partyInfo.createEmbed())
-                                .withComponents(ActionRow.of(button, deleteButton));
+                                .withEmbeds(partyInfo.createEmbed());
+//                                .withComponents(ActionRow.of(buttons));
                     }
 
                     if (buttonEvent.getCustomId().equals(deleteButtonGUID)) {
-                        String buttonUserName = buttonEvent.getInteraction().getUser().getGlobalName().get();
                         String buttonUserid = buttonEvent.getInteraction().getUser().getId().asString();
 
                         if (buttonUserid.equals(partyInfo.getHostInfo().getId())) {
@@ -176,16 +232,41 @@ public class Main {
                         }
 
                         return buttonEvent.edit("")
-                                .withEmbeds(partyInfo.createEmbed())
-                                .withComponents(ActionRow.of(button, deleteButton));
+                                .withEmbeds(partyInfo.createEmbed());
+//                                .withComponents(ActionRow.of(buttons));
 
                     }
+
+
+
                     // Ignore it
                     return Mono.empty();
 
-                }).timeout(Duration.ofDays(3))      //Change to be date set for - date submitted
+                })
+                .timeout(Duration.ofDays(3))      //Change to be date set for - date submitted
                 .onErrorResume(TimeoutException.class, ignore -> Mono.empty())
                 .then();
+
+        return new ButtonInfo(buttonListener, buttons);
+    }
+
+    record ButtonInfo(Mono<Void> listener, List<Button> buttons){
+        public List<LayoutComponent> getActionRows(){
+            if(buttons.size() <= 5){
+                return List.of(ActionRow.of(buttons));
+            }
+
+            List<LayoutComponent> actionRows = new ArrayList<>();
+            try{
+                for(int i = 0; i < buttons.size(); i+= 5){
+                    actionRows.add(ActionRow.of(buttons.subList(i, i + Math.min(5, buttons.size()-i))));
+                }
+            } catch (Exception e){
+                System.out.println(e);
+            }
+
+            return actionRows;
+        }
     }
 
     private static List<ApplicationCommandOptionData> getApplicationCommandOptionData() {
@@ -194,8 +275,9 @@ public class Main {
         options.add(ApplicationCommandOptionData.builder().name("type").description("type").type(ApplicationCommandOption.Type.STRING.getValue()).autocomplete(true).required(true).build());
         options.add(ApplicationCommandOptionData.builder().name("server").description("server").type(ApplicationCommandOption.Type.STRING.getValue()).autocomplete(true).required(true).build());
         options.add(ApplicationCommandOptionData.builder().name("people").description("# of People").type(ApplicationCommandOption.Type.INTEGER.getValue()).autocomplete(false).required(false).build());
-        options.add(ApplicationCommandOptionData.builder().name("quantity").description("quantity").type(ApplicationCommandOption.Type.INTEGER.getValue()).autocomplete(false).required(false).build());
         options.add(ApplicationCommandOptionData.builder().name("timestamp").description("Timestamp").type(ApplicationCommandOption.Type.STRING.getValue()).autocomplete(false).required(false).build());
+        options.add(ApplicationCommandOptionData.builder().name("recipe").description("Recipe").type(ApplicationCommandOption.Type.STRING.getValue()).autocomplete(true).required(false).build());
+        options.add(ApplicationCommandOptionData.builder().name("quantity").description("quantity").type(ApplicationCommandOption.Type.INTEGER.getValue()).autocomplete(false).required(false).build());
 
         return options;
     }

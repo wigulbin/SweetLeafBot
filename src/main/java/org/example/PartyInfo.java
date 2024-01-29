@@ -19,9 +19,12 @@ public class PartyInfo implements Serializable
     private String commandGuid;
     private String timestamp = "";
 
+    private Recipe recipe;
+
+
     private List<UserInfo> userList;
 
-    public PartyInfo(TypeInfo type, UserInfo hostInfo, long people, String server, boolean status, String commandGuid, String timestamp)
+    public PartyInfo(TypeInfo type, UserInfo hostInfo, long people, String server, boolean status, String commandGuid, String timestamp, Recipe recipe)
     {
         this.type = type;
         this.hostInfo = hostInfo;
@@ -30,6 +33,7 @@ public class PartyInfo implements Serializable
         this.status = status;
         this.commandGuid = commandGuid;
         this.timestamp = timestamp;
+        this.recipe = recipe;
 
         this.userList = new ArrayList<>();
     }
@@ -50,19 +54,45 @@ public class PartyInfo implements Serializable
         String userid = event.getInteraction().getUser().getId().asString();
 
         TypeInfo type = TypeInfo.getType(event.getOption("type").get().getValue().get().asString());
-        long people = 10;
-        if(event.getOption("people").isPresent()) people = event.getOption("people").get().getValue().get().asLong();
+        long people = getPeople(event);
 
-        String timestamp = "";
-        if(event.getOption("timestamp").isPresent()) timestamp = event.getOption("timestamp").get().getValue().get().asString();
+        String timestamp = getTimestamp(event);
 
         String server = event.getOption("server").get().getValue().get().asString();
 
         long finalPeople = people;
 
-        PartyInfo info = new PartyInfo(type, new PartyInfo.UserInfo(userid, userName), finalPeople, server, true, modalGuid, timestamp);
+        UserInfo userInfo = new PartyInfo.UserInfo(userid, userName, "");
+        Recipe recipe = getRecipe(event);
+
+        PartyInfo info = new PartyInfo(type, userInfo, finalPeople, server, true, modalGuid, timestamp, recipe);
         infoList.add(info);
         return info;
+    }
+    private static Recipe getRecipe(ChatInputInteractionEvent event) {
+        Recipe recipe = null;
+
+        String recipeName = "";
+        if(event.getOption("recipe").isPresent()) recipeName = event.getOption("recipe").get().getValue().get().asString();
+
+        if(!recipeName.isEmpty()){
+            String recipeCode = Common.removeSpaces(recipeName).toLowerCase();
+            recipe = Recipes.getRecipe(recipeCode);
+        }
+
+        return recipe;
+    }
+
+    private static String getTimestamp(ChatInputInteractionEvent event) {
+        String timestamp = "";
+        if(event.getOption("timestamp").isPresent()) timestamp = event.getOption("timestamp").get().getValue().get().asString();
+        return timestamp;
+    }
+
+    private static long getPeople(ChatInputInteractionEvent event) {
+        long people = 10;
+        if(event.getOption("people").isPresent()) people = event.getOption("people").get().getValue().get().asLong();
+        return people;
     }
 
 
@@ -79,12 +109,6 @@ public class PartyInfo implements Serializable
             userList.add(userInfo);
     }
 
-    public void addUser(String id, String name){
-        UserInfo userInfo = new UserInfo(id, name);
-        if(!userList.contains(userInfo))
-            userList.add(userInfo);
-    }
-
     public void removeUser(String userid){
         userList.removeIf(user -> user.getId().equals(userid));
     }
@@ -93,9 +117,7 @@ public class PartyInfo implements Serializable
     public EmbedCreateSpec createEmbed()
     {
         PartyInfo partyInfo = this;
-        String status = "Open";
-        if(!partyInfo.isStatus())
-            status = "Closed";
+        String status = getStatus(partyInfo);
 
         EmbedCreateSpec.Builder embed = EmbedCreateSpec.builder()
                 .color(partyInfo.getColor())
@@ -104,27 +126,41 @@ public class PartyInfo implements Serializable
                 .description(partyInfo.getHostInfo().getPingText() + " is hosting a " + partyInfo.getType() + " party " + partyInfo.getTimestamp())
                 .thumbnail(partyInfo.getImageURL());
 
+
         embed = embed.addField("Participants:", "", false);
 
-        int personCount = 0;
-        for (UserInfo userInfo : partyInfo.getUserList())
-        {
-            embed = embed.addField("", "- " + userInfo.getPingText(), false);
-            personCount++;
-        }
-
-        for(int i = personCount; i < partyInfo.getPeople(); i++)
-            embed = embed.addField("", "- Open", false);
-
-//        embed = embed.addField((EmbedCreateFields.Field) ActionRow.of(Button.primary("test", "")));
+        embed = addUsersToEmbed(partyInfo, embed);
 
         embed = embed.timestamp(Instant.now());
 
         return embed.build();
     }
 
+    private static EmbedCreateSpec.Builder addUsersToEmbed(PartyInfo partyInfo, EmbedCreateSpec.Builder embed) {
+        if(partyInfo.recipe == null) {
+            int personCount = 0;
+            for (UserInfo userInfo : partyInfo.getUserList())
+            {
+                embed = embed.addField("**Test**- Test", "- " + userInfo.getPingText(), false);
+                personCount++;
+            }
 
-    public record UserInfo(String id, String name) implements Serializable {
+            for(int i = personCount; i < partyInfo.getPeople(); i++)
+                embed = embed.addField("", "- Open", false);
+        }
+
+        return embed;
+    }
+
+    private static String getStatus(PartyInfo partyInfo) {
+        String status = "Open";
+        if(!partyInfo.isStatus())
+            status = "Closed";
+        return status;
+    }
+
+
+    public record UserInfo(String id, String name, String recipeRole) implements Serializable {
         String getId(){return id;}
         String getName(){return name;}
         String getPingText(){
@@ -203,5 +239,13 @@ public class PartyInfo implements Serializable
 
     public void setTimestamp(String timestamp) {
         this.timestamp = timestamp;
+    }
+
+    public Recipe getRecipe() {
+        return recipe;
+    }
+
+    public void setRecipe(Recipe recipe) {
+        this.recipe = recipe;
     }
 }

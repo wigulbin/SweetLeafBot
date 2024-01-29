@@ -23,6 +23,10 @@ public class Common {
         return string.replaceAll(" ", "");
     }
 
+    public static String normalizeString(String string){
+        return string.replaceAll(" ", "").toLowerCase();
+    }
+
     public static String createGUID(){
         return UUID.randomUUID().toString();
     }

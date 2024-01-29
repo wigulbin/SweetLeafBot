@@ -1,0 +1,411 @@
+{
+  "recipes": [
+    {
+      "recipeName": "Apple Pie",
+      "emoji": ":_PaliaApplePie:",
+      "roles": [
+        {
+          "roleName": "Starter",
+          "station": "Oven Station",
+          "emoji": ":_PaliaOven:",
+          "brings": [
+            {
+              "itemName": "Butter",
+              "quantity": 1,
+              "lock": "",
+              "emoji": ":_PaliaButter:",
+              "mustBeStar": false
+            },
+            {
+              "itemName": "Recipe",
+              "quantity": 1,
+              "lock": "",
+              "emoji": ":_PaliaRecipe:",
+              "mustBeStar": false
+            }
+          ]
+        },
+        {
+          "roleName": "Wheat",
+          "station": "Prep Station",
+          "emoji": ":_PaliaPrepStation:",
+          "brings": [
+            {
+              "itemName": "Wheat",
+              "quantity": 1,
+              "lock": "Spice Sprouts, Apples",
+              "emoji": ":_PaliaWheat:",
+              "mustBeStar": true
+            }
+          ]
+        },
+        {
+          "roleName": "Apple/Mixer",
+          "station": "Prep Station, Mixing Station",
+          "emoji": ":_PaliaPrepStation:",
+          "brings": [
+            {
+              "itemName": "Apples",
+              "quantity": 3,
+              "lock": "Spice Sprouts, Wheat, Sweet Leaf",
+              "emoji": ":_PaliaApple:",
+              "mustBeStar": true
+            }
+          ]
+        },
+        {
+          "roleName": "Leafer",
+          "station": "Mixing Station",
+          "emoji": ":_PaliaMixingStation:",
+          "brings": [
+            {
+              "itemName": "Sweet Leaf",
+              "quantity": 1,
+              "lock": "",
+              "emoji": ":_PaliaSweetleaf:",
+              "mustBeStar": false
+            }
+          ]
+        },
+        {
+          "roleName": "Spice Sprouts",
+          "station": "Prep Station",
+          "emoji": ":_PaliaPrepStation:",
+          "brings": [
+            {
+              "itemName": "Spice Sprouts",
+              "quantity": 1,
+              "lock": "Apples, Wheat",
+              "emoji": ":_PaliaSpiceSprouts:",
+              "mustBeStar": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "recipeName": "Apple Celebration Cake",
+      "emoji": ":_PaliaApplePie:",
+      "roles": [
+        {
+          "roleName": "Starter",
+          "station": "Prep Station",
+          "emoji": ":_PaliaPrepStation:",
+          "brings": [
+            {
+              "itemName": "Blueberries",
+              "quantity": 1,
+              "lock": "",
+              "emoji": ":_PaliaBloob:",
+              "mustBeStar": true
+            },
+            {
+              "itemName": "Recipe",
+              "quantity": 1,
+              "lock": "",
+              "emoji": ":_PaliaRecipe:",
+              "mustBeStar": false
+            }
+          ]
+        },
+        {
+          "roleName": "Leafer",
+          "station": "Mixing Station",
+          "emoji": ":_PaliaMixingStation:",
+          "brings": [
+            {
+              "itemName": "Sweet Leaf",
+              "quantity": 1,
+              "lock": "",
+              "emoji": ":_PaliaSweetleaf:",
+              "mustBeStar": false
+            }
+          ]
+        },
+        {
+          "roleName": "Batter",
+          "station": "Mixing Station",
+          "emoji": ":_PaliaMixingStation:",
+          "brings": [
+            {
+              "itemName": "Flour",
+              "quantity": 1,
+              "lock": "",
+              "emoji": ":_PaliaFLour:",
+              "mustBeStar": false
+            },
+            {
+              "itemName": "Egg",
+              "quantity": 1,
+              "lock": "",
+              "emoji": ":_PaliaEgg:",
+              "mustBeStar": false
+            },
+            {
+              "itemName": "Butter",
+              "quantity": 1,
+              "lock": "",
+              "emoji": ":_PaliaButter:",
+              "mustBeStar": false
+            }
+          ]
+        },
+        {
+          "roleName": "Regular Frost",
+          "station": "Mixing Station",
+          "emoji": ":_PaliaMixingStation:",
+          "brings": [
+            {
+              "itemName": "Milk",
+              "quantity": 1,
+              "lock": "",
+              "emoji": ":_PaliaMilk:",
+              "mustBeStar": false
+            },
+            {
+              "itemName": "Butter",
+              "quantity": 1,
+              "lock": "",
+              "emoji": ":_PaliaButter:",
+              "mustBeStar": false
+            }
+          ]
+        },
+        {
+          "roleName": "Fruit Frost",
+          "station": "Mixing Station",
+          "emoji": ":_PaliaMixingStation:",
+          "brings": [
+            {
+              "itemName": "Apples",
+              "quantity": 1,
+              "lock": "",
+              "emoji": ":_PaliaApple:",
+              "mustBeStar": true
+            },
+            {
+              "itemName": "Sugar",
+              "quantity": 1,
+              "lock": "",
+              "emoji": ":_PaliaSugar:",
+              "mustBeStar": false
+            }
+          ]
+        },
+        {
+          "roleName": "Baker",
+          "station": "Oven Station",
+          "emoji": ":_PaliaOven:",
+          "brings": []
+        },
+        {
+          "roleName": "Spread",
+          "station": "Prep Station",
+          "emoji": ":_PaliaPrepStation:",
+          "brings": []
+        }
+      ]
+    },
+    {
+      "recipeName": "Chili Oil Dumplings",
+      "emoji": ":dumpling:",
+      "roles": [
+        {
+          "roleName": "Starter",
+          "station": "Stove Station",
+          "emoji": ":_PaliaStove:",
+          "brings": [
+            {
+              "itemName": "Spice Sprouts",
+              "quantity": 1,
+              "lock": "",
+              "emoji": ":_PaliaSpiceSprouts:",
+              "mustBeStar": false
+            },
+            {
+              "itemName": "Recipe",
+              "quantity": 1,
+              "lock": "",
+              "emoji": ":_PaliaRecipe:",
+              "mustBeStar": false
+            }
+          ]
+        },
+        {
+          "roleName": "Rice",
+          "station": "Stove Station",
+          "emoji": "",
+          "brings": [
+            {
+              "itemName": "Rice",
+              "quantity": 1,
+              "lock": "",
+              "emoji": ":_PaliaRice:",
+              "mustBeStar": true
+            }
+          ]
+        },
+        {
+          "roleName": "Veggie (Any)",
+          "station": "Prep Station",
+          "emoji": ":_PaliaPrepStation:",
+          "brings": [
+            {
+              "itemName": "Any Veggie",
+              "quantity": 1,
+              "lock": "",
+              "emoji": ":_PaliaVeg:",
+              "mustBeStar": true
+            }
+          ]
+        },
+        {
+          "roleName": "Wheat",
+          "station": "Prep Station",
+          "emoji": ":_PaliaPrepStation:",
+          "brings": [
+            {
+              "itemName": "Wheat",
+              "quantity": 1,
+              "lock": "Carrots",
+              "emoji": ":_PaliaWheat:",
+              "mustBeStar": true
+            }
+          ]
+        },
+        {
+          "roleName": "Pepper",
+          "station": "Prep Station",
+          "emoji": ":_PaliaPrepStation:",
+          "brings": [
+            {
+              "itemName": "Spicy Pepper",
+              "quantity": 1,
+              "lock": "Carrots",
+              "emoji": ":_PaliaSpicyPepper:",
+              "mustBeStar": true
+            }
+          ]
+        },
+        {
+          "roleName": "Meat (Any)",
+          "station": "Prep Station",
+          "emoji": ":_PaliaPrepStation:",
+          "brings": [
+            {
+              "itemName": "Any Red Meat",
+              "quantity": 1,
+              "lock": "Carrots",
+              "emoji": ":_PaliaRedMeat:",
+              "mustBeStar": false
+            }
+          ]
+        },
+        {
+          "roleName": "Mixer",
+          "station": "Mixing Station",
+          "emoji": ":_PaliaMixingStation:",
+          "brings": [
+            {
+              "itemName": "Cooking Oil",
+              "quantity": 1,
+              "lock": "",
+              "emoji": ":_PaliaCookingOil:",
+              "mustBeStar": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "recipeName": "Crab Pot Pie",
+      "emoji": ":crab:",
+      "roles": [
+        {
+          "roleName": "Starter",
+          "station": "Oven Station",
+          "emoji": ":_PaliaOven:",
+          "brings": [
+            {
+              "itemName": "Corn",
+              "quantity": 1,
+              "lock": "",
+              "emoji": ":_PaliaCorn:",
+              "mustBeStar": true
+            },
+            {
+              "itemName": "Butter",
+              "quantity": 1,
+              "lock": "",
+              "emoji": ":_PaliaButter:",
+              "mustBeStar": false
+            },
+            {
+              "itemName": "Recipe",
+              "quantity": 1,
+              "lock": "",
+              "emoji": ":_PaliaRecipe:",
+              "mustBeStar": false
+            }
+          ]
+        },
+        {
+          "roleName": "Crab",
+          "station": "Prep Station",
+          "emoji": ":_PaliaPrepStation:",
+          "brings": [
+            {
+              "itemName": "Vampire Crab",
+              "quantity": 1,
+              "lock": "Non-Vampire Crabs",
+              "emoji": ":crab:",
+              "mustBeStar": false
+            }
+          ]
+        },
+        {
+          "roleName": "Wheat",
+          "station": "Prep Station",
+          "emoji": ":_PaliaPrepStation:",
+          "brings": [
+            {
+              "itemName": "Wheat",
+              "quantity": 1,
+              "lock": "Carrots",
+              "emoji": ":_PaliaWheat:",
+              "mustBeStar": true
+            }
+          ]
+        },
+        {
+          "roleName": "Veggie (Any Except Carrots)",
+          "station": "Prep Station",
+          "emoji": ":_PaliaPrepStation:",
+          "brings": [
+            {
+              "itemName": "Any Veggie",
+              "quantity": 1,
+              "lock": "Carrots",
+              "emoji": ":_PaliaVeg:",
+              "mustBeStar": true
+            }
+          ]
+        },
+        {
+          "roleName": "Onion",
+          "station": "Prep Station",
+          "emoji": ":_PaliaPrepStation:",
+          "brings": [
+            {
+              "itemName": "Onion",
+              "quantity": 1,
+              "lock": "Carrots",
+              "emoji": ":_PaliaOnion:",
+              "mustBeStar": true
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
