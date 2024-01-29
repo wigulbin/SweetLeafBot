@@ -2,6 +2,7 @@ package org.example;
 
 import java.io.Serializable;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class RecipeRole implements Serializable {
     private String roleName = "";
@@ -10,6 +11,14 @@ public class RecipeRole implements Serializable {
     private List<Ingredient> brings;
 
     public RecipeRole() {
+    }
+
+
+
+    public String getBringDisplayString(long quantity){
+        return brings.stream()
+                .map(ingredient -> ingredient.getDisplayString(quantity))
+                .collect(Collectors.joining("\r\n"));
     }
 
     public String getRoleName() {

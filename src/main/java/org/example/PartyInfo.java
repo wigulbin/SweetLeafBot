@@ -18,13 +18,14 @@ public class PartyInfo implements Serializable
     private boolean status;
     private String commandGuid;
     private String timestamp = "";
+    private long quantity;
 
     private Recipe recipe;
 
 
     private List<UserInfo> userList;
 
-    public PartyInfo(TypeInfo type, UserInfo hostInfo, long people, String server, boolean status, String commandGuid, String timestamp, Recipe recipe)
+    public PartyInfo(TypeInfo type, UserInfo hostInfo, long people, String server, boolean status, String commandGuid, String timestamp, Recipe recipe, long quantity)
     {
         this.type = type;
         this.hostInfo = hostInfo;
@@ -34,6 +35,7 @@ public class PartyInfo implements Serializable
         this.commandGuid = commandGuid;
         this.timestamp = timestamp;
         this.recipe = recipe;
+        this.quantity = quantity;
 
         this.userList = new ArrayList<>();
     }
@@ -55,6 +57,7 @@ public class PartyInfo implements Serializable
 
         TypeInfo type = TypeInfo.getType(event.getOption("type").get().getValue().get().asString());
         long people = getPeople(event);
+        long quantity = getQuantity(event);
 
         String timestamp = getTimestamp(event);
 
@@ -65,7 +68,7 @@ public class PartyInfo implements Serializable
         UserInfo userInfo = new PartyInfo.UserInfo(userid, userName, "");
         Recipe recipe = getRecipe(event);
 
-        PartyInfo info = new PartyInfo(type, userInfo, finalPeople, server, true, modalGuid, timestamp, recipe);
+        PartyInfo info = new PartyInfo(type, userInfo, finalPeople, server, true, modalGuid, timestamp, recipe, quantity);
         infoList.add(info);
         return info;
     }
@@ -95,6 +98,12 @@ public class PartyInfo implements Serializable
         return people;
     }
 
+    private static long getQuantity(ChatInputInteractionEvent event) {
+        long quantity = 1;
+        if(event.getOption("quantity").isPresent()) quantity = event.getOption("quantity").get().getValue().get().asLong();
+        return quantity;
+    }
+
 
     String getImageURL() {
         return type.getImageURL();
@@ -119,15 +128,19 @@ public class PartyInfo implements Serializable
         PartyInfo partyInfo = this;
         String status = getStatus(partyInfo);
 
+        String partyName = partyInfo.getType().toString();
+        if(partyInfo.getRecipe() != null) partyName = partyInfo.getRecipe().getRecipeMultiplier() + "x " + partyInfo.getRecipe().getRecipeName();
+
         EmbedCreateSpec.Builder embed = EmbedCreateSpec.builder()
                 .color(partyInfo.getColor())
                 .title("Hosted by " + partyInfo.getHostInfo().name + "")
                 .author( "(" + status + ") " + partyInfo.getServer() + " " + partyInfo.getType() + " Party", "", partyInfo.getImageURL())
-                .description(partyInfo.getHostInfo().getPingText() + " is hosting a " + partyInfo.getType() + " party " + partyInfo.getTimestamp())
+                .description(partyInfo.getHostInfo().getPingText() + " is hosting a " + partyName + " party " + partyInfo.getTimestamp())
                 .thumbnail(partyInfo.getImageURL());
 
 
-        embed = embed.addField("Participants:", "", false);
+        if(partyInfo.getRecipe() == null)
+            embed = embed.addField("Participants:", "", false);
 
         embed = addUsersToEmbed(partyInfo, embed);
 
@@ -141,12 +154,35 @@ public class PartyInfo implements Serializable
             int personCount = 0;
             for (UserInfo userInfo : partyInfo.getUserList())
             {
-                embed = embed.addField("**Test**- Test", "- " + userInfo.getPingText(), false);
+                embed = embed.addField("", "- " + userInfo.getPingText(), false);
                 personCount++;
             }
 
             for(int i = personCount; i < partyInfo.getPeople(); i++)
                 embed = embed.addField("", "- Open", false);
+        }
+//<:AdorableFrog:937754121795174420>
+        if(partyInfo.recipe != null) {
+            Recipe recipe = partyInfo.recipe;
+            int roleCounter = 0;
+            for (RecipeRole role : recipe.getRoles()) {
+                embed = embed.addField(role.getRoleName() + " - " + role.getStation(), role.getBringDisplayString(partyInfo.quantity), false);
+
+                int personCount = 0;
+                for (UserInfo userInfo : partyInfo.getUserList())
+                {
+                    if(userInfo.recipeRole.equals(roleCounter + "")){
+                        personCount++;
+                        embed.addField("", personCount + ": " + userInfo.getPingText(), false);
+                    }
+                }
+
+                if(personCount == 0)
+                    embed = embed.addField("", "1: ", false);
+
+                embed = embed.addField("", " ", false);
+                roleCounter++;
+            }
         }
 
         return embed;

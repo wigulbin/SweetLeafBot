@@ -28,7 +28,8 @@ import java.util.concurrent.TimeoutException;
 
 public class Main {
     private static final String token = System.getenv("token");
-    private static final long guildId = Long.parseLong("937741716042174486");
+    //    private static final long guildId = Long.parseLong("937741716042174486");
+    private static final long guildId = Long.parseLong("1151985071272763452");
 
     static final String CHAT_INPUT_COMMAND_NAME = "party";
     static final String MODAL_CUSTOM_ID = "my-modal";
@@ -36,6 +37,7 @@ public class Main {
     static final String SELECT_CUSTOM_ID = "my-select";
     static final String INPUT_CUSTOM_ID = "my-input";
 
+    //  "discordAPIKey": "NDM4MTI2OTU4NjgyMDQ2NDY1.GfErSC.vHSjHQG0Uiuchv5WzbRCxAtc9WJadDc3SZL6aA"
     public static void main( String[] args )
     {
         Recipes.loadRecipesFromFile();
@@ -43,104 +45,107 @@ public class Main {
 
         DiscordClient.create(JSONFile.getJSONValueFromFile("discordAPIKey", "keys.json"))
                 .withGateway(client -> {
-//                Mono<Void> handlePingCommand = createPingCommand(client);
-//                return handlePingCommand;
+                    if(guildId == 0){
+                        Mono<Void> handlePingCommand = createPingCommand(client);
+                        return handlePingCommand;
+                    } else {
+                        System.out.println(client);
+                        List<ApplicationCommandOptionData> options = getApplicationCommandOptionData();
 
-                    List<ApplicationCommandOptionData> options = getApplicationCommandOptionData();
+                        ApplicationCommandRequest example = ApplicationCommandRequest.builder()
+                                .name(CHAT_INPUT_COMMAND_NAME)
+                                .addAllOptions(options)
+                                .description("Create a party for Palia")
+                                .build();
 
-                    ApplicationCommandRequest example = ApplicationCommandRequest.builder()
-                            .name(CHAT_INPUT_COMMAND_NAME)
-                            .addAllOptions(options)
-                            .description("Create a party for Palia")
-                            .build();
+                        List<ApplicationCommandRequest> commands = Collections.singletonList(example);
 
-                    List<ApplicationCommandRequest> commands = Collections.singletonList(example);
+                        Publisher<?> onChatInput = client.on(ChatInputInteractionEvent.class, event -> {
+                            if (CHAT_INPUT_COMMAND_NAME.equals(event.getCommandName())) {
+                                String commandGuid = Common.createGUID();
+                                PartyInfo partyInfo = PartyInfo.createFromEvent(event, commandGuid);
 
-                    Publisher<?> onChatInput = client.on(ChatInputInteractionEvent.class, event -> {
-                        if (CHAT_INPUT_COMMAND_NAME.equals(event.getCommandName())) {
-                            String commandGuid = Common.createGUID();
-                            PartyInfo partyInfo = PartyInfo.createFromEvent(event, commandGuid);
+                                ButtonInfo buttonInfo = createButtons(client, partyInfo, commandGuid);
 
-                            ButtonInfo buttonInfo = createButtons(client, partyInfo, commandGuid);
-
-                            return event.reply()
-                                    .withEmbeds(partyInfo.createEmbed())
+                                return event.reply()
+                                        .withEmbeds(partyInfo.createEmbed())
 //                                    .withComponents(ActionRow.of(buttonInfo.buttons))
-                                    .withComponents(buttonInfo.getActionRows())
-                                    .then(buttonInfo.listener);
-                        }
-                        return Mono.empty();
-                    });
+                                        .withComponents(buttonInfo.getActionRows())
+                                        .then(buttonInfo.listener);
+                            }
+                            return Mono.empty();
+                        });
 
-                    Publisher<?> onModal = client.on(ModalSubmitInteractionEvent.class, event -> {
-                        if (REMOVE_MODAL_ID.equals(event.getCustomId())) {
-                            for (TextInput component : event.getComponents(TextInput.class)) {
-                                String[] fields = component.getCustomId().split("_");
-                                if(fields.length == 3) {
-                                    String commandGuid = fields[1].split(":")[1];
-                                    String userId = fields[2];
-                                    if(!userId.isEmpty() && component.getValue().orElse("").isEmpty()){
-                                        PartyInfo partyInfo = PartyInfo.getPartyInfoByGuid(commandGuid);
-                                        if(partyInfo != null){
-                                            partyInfo.removeUser(userId);
+                        Publisher<?> onModal = client.on(ModalSubmitInteractionEvent.class, event -> {
+                            if (REMOVE_MODAL_ID.equals(event.getCustomId())) {
+                                for (TextInput component : event.getComponents(TextInput.class)) {
+                                    String[] fields = component.getCustomId().split("_");
+                                    if(fields.length == 3) {
+                                        String commandGuid = fields[1].split(":")[1];
+                                        String userId = fields[2];
+                                        if(!userId.isEmpty() && component.getValue().orElse("").isEmpty()){
+                                            PartyInfo partyInfo = PartyInfo.getPartyInfoByGuid(commandGuid);
+                                            if(partyInfo != null){
+                                                partyInfo.removeUser(userId);
 
-                                            return event.edit("")
-                                                    .withEmbeds(partyInfo.createEmbed());
+                                                return event.edit("")
+                                                        .withEmbeds(partyInfo.createEmbed());
 //                                                    .withComponents(ActionRow.of(button, deleteButton));
+                                            }
                                         }
                                     }
+
+                                }
+                            }
+                            return Mono.empty();
+                        });
+
+                        Publisher<?> onChat = client.on(ChatInputAutoCompleteEvent.class, event -> {
+                            if (event.getCommandName().equals(CHAT_INPUT_COMMAND_NAME)) {
+                                // Get the string value of what the user is currently typing
+                                String typing = event.getFocusedOption().getValue()
+                                        .map(ApplicationCommandInteractionOptionValue::asString)
+                                        .orElse("").toLowerCase(); // In case the user has not started typing, we return an empty string
+
+                                List<ApplicationCommandOptionChoiceData> suggestions = new ArrayList<>();
+
+                                if(event.getFocusedOption().getName().equals("type"))
+                                {
+                                    List<TypeInfo> types = TypeInfo.getOrCreateTypeCodes();
+                                    types.stream()
+                                            .sorted((s1, s2) -> TypeInfo.compareTypes(s1, s2, typing))
+                                            .map(s -> ApplicationCommandOptionChoiceData.builder().name(s.getName()).value(s.getCode()).build())
+                                            .forEach(suggestions::add);
                                 }
 
+                                if(event.getFocusedOption().getName().equals("server"))
+                                {
+                                    suggestions.add(ApplicationCommandOptionChoiceData.builder().name("NA").value("NA").build());
+                                    suggestions.add(ApplicationCommandOptionChoiceData.builder().name("EU").value("EU").build());
+                                    suggestions.add(ApplicationCommandOptionChoiceData.builder().name("PA").value("PA").build());
+                                }
+
+                                if(event.getFocusedOption().getName().equals("recipe"))
+                                {
+                                    Recipes.getRecipeList().stream()
+                                            .map(Recipe::getRecipeName)
+                                            .sorted((s1, s2) -> compareTypes(s1, s2, typing))
+                                            .map(s -> ApplicationCommandOptionChoiceData.builder().name(s).value(normalize(s)).build())
+                                            .forEach(suggestions::add);
+                                }
+
+
+                                // Finally, return the list of choices to the user
+                                return event.respondWithSuggestions(suggestions);
                             }
-                        }
-                        return Mono.empty();
-                    });
+                            return null;
+                        });
 
-                    Publisher<?> onChat = client.on(ChatInputAutoCompleteEvent.class, event -> {
-                        if (event.getCommandName().equals(CHAT_INPUT_COMMAND_NAME)) {
-                            // Get the string value of what the user is currently typing
-                            String typing = event.getFocusedOption().getValue()
-                                    .map(ApplicationCommandInteractionOptionValue::asString)
-                                    .orElse("").toLowerCase(); // In case the user has not started typing, we return an empty string
-
-                            List<ApplicationCommandOptionChoiceData> suggestions = new ArrayList<>();
-
-                            if(event.getFocusedOption().getName().equals("type"))
-                            {
-                                List<TypeInfo> types = TypeInfo.getOrCreateTypeCodes();
-                                types.stream()
-                                        .sorted((s1, s2) -> TypeInfo.compareTypes(s1, s2, typing))
-                                        .map(s -> ApplicationCommandOptionChoiceData.builder().name(s.getName()).value(s.getCode()).build())
-                                        .forEach(suggestions::add);
-                            }
-
-                            if(event.getFocusedOption().getName().equals("server"))
-                            {
-                                suggestions.add(ApplicationCommandOptionChoiceData.builder().name("NA").value("NA").build());
-                                suggestions.add(ApplicationCommandOptionChoiceData.builder().name("EU").value("EU").build());
-                                suggestions.add(ApplicationCommandOptionChoiceData.builder().name("PA").value("PA").build());
-                            }
-
-                            if(event.getFocusedOption().getName().equals("recipe"))
-                            {
-                                Recipes.getRecipeList().stream()
-                                        .map(Recipe::getRecipeName)
-                                        .sorted((s1, s2) -> compareTypes(s1, s2, typing))
-                                        .map(s -> ApplicationCommandOptionChoiceData.builder().name(s).value(normalize(s)).build())
-                                        .forEach(suggestions::add);
-                            }
-
-
-                            // Finally, return the list of choices to the user
-                            return event.respondWithSuggestions(suggestions);
-                        }
-                        return null;
-                    });
-
-                    return GuildCommandRegistrar.create(client.getRestClient(), commands)
-                            .registerCommands(Snowflake.of(guildId))
+                        return GuildCommandRegistrar.create(client.getRestClient(), commands)
+                                .registerCommands(Snowflake.of(guildId))
 //                            .thenMany(Mono.when(onChatInput, onModal));
-                            .thenMany(Mono.when(onChatInput, onModal, onChat));
+                                .thenMany(Mono.when(onChatInput, onModal, onChat));
+                    }
                 })
                 .block();
     }
@@ -185,10 +190,7 @@ public class Main {
         Button deleteButton = Button.danger(deleteButtonGUID, "Remove Name");
         buttons.add(deleteButton);
 
-        for (Button button1 : buttons) {
-            System.out.println(button1.getCustomId() + " - " + button1.getLabel());
-        }
-
+        // Issues with adding self to multiple roles (got stuck with 4 and could not add more)
         Mono<Void> buttonListener = client.on(ButtonInteractionEvent.class, buttonEvent -> {
                     if (buttonEvent.getCustomId().equals(signUpButtonGUID)) {
                         String buttonUserName = buttonEvent.getInteraction().getUser().getGlobalName().get();
@@ -236,8 +238,6 @@ public class Main {
 //                                .withComponents(ActionRow.of(buttons));
 
                     }
-
-
 
                     // Ignore it
                     return Mono.empty();
@@ -294,6 +294,7 @@ public class Main {
                 System.out.println(user.getUsername() + ": " + message.getContent());
             }
 
+            System.out.println(message.getGuildId().get().asString());
             if (message.getContent().equals("!ping"))
                 return message.getChannel().flatMap(channel -> channel.createMessage("pong!"));
 

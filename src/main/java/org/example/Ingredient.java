@@ -12,6 +12,24 @@ public class Ingredient implements Serializable {
     public Ingredient() {
     }
 
+    public String getDisplayString(long multiplier){
+        String value = "";
+        if(mustBeStar) value += "⭐";
+
+        String emojiText = emoji;
+        if(!emoji.endsWith(":"))
+            emojiText = "<" + emoji + "> ";
+
+        String itemText = itemName;
+        if(!itemText.equalsIgnoreCase("Recipe"))
+            itemText = (multiplier * quantity) + " " + itemName;
+
+        value += emojiText + " " + itemText;
+
+        return value;
+    }
+
+
     public String getItemName() {
         return itemName;
     }
