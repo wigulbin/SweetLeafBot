@@ -4,14 +4,17 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="5855c59d-2acd-4e56-8806-8ba17a74ecdb" name="Changes" comment="Recipe JSON loader + display roles for cooking recipe for signup buttons">
+    <list default="true" id="5855c59d-2acd-4e56-8806-8ba17a74ecdb" name="Changes" comment="remove key">
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/example/UserInfo.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/resources/logback.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/org/example/Ingredient.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/example/Ingredient.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/pom.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/example/FileTask.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/example/FileTask.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/example/Fileable.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/example/Fileable.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/org/example/Main.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/example/Main.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/org/example/PartyInfo.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/example/PartyInfo.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/org/example/RecipeRole.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/example/RecipeRole.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/resources/keys.json" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/keys.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/resources/recipe.json" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/recipe.json" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -97,7 +100,8 @@
       <workItem from="1706226302848" duration="10942000" />
       <workItem from="1706308833636" duration="5561000" />
       <workItem from="1706375351746" duration="1896000" />
-      <workItem from="1706454039668" duration="21287000" />
+      <workItem from="1706454039668" duration="22119000" />
+      <workItem from="1706570014000" duration="7957000" />
     </task>
     <task id="LOCAL-00001" summary="Storing Party and User info as files atm, v1">
       <option name="closed" value="true" />
@@ -123,7 +127,23 @@
       <option name="project" value="LOCAL" />
       <updated>1706491940581</updated>
     </task>
-    <option name="localTasksCounter" value="4" />
+    <task id="LOCAL-00004" summary="Recipe icons + Display recipe ingredients in embed + embed for recipes">
+      <option name="closed" value="true" />
+      <created>1706497411247</created>
+      <option name="number" value="00004" />
+      <option name="presentableId" value="LOCAL-00004" />
+      <option name="project" value="LOCAL" />
+      <updated>1706497411247</updated>
+    </task>
+    <task id="LOCAL-00005" summary="remove key">
+      <option name="closed" value="true" />
+      <created>1706497457356</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1706497457356</updated>
+    </task>
+    <option name="localTasksCounter" value="6" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -144,7 +164,9 @@
     <MESSAGE value="Storing Party and User info as files atm, v1" />
     <MESSAGE value="Discord timestamp support for PartyInfo, modal remove for party hosts" />
     <MESSAGE value="Recipe JSON loader + display roles for cooking recipe for signup buttons" />
-    <option name="LAST_COMMIT_MESSAGE" value="Recipe JSON loader + display roles for cooking recipe for signup buttons" />
+    <MESSAGE value="Recipe icons + Display recipe ingredients in embed + embed for recipes" />
+    <MESSAGE value="remove key" />
+    <option name="LAST_COMMIT_MESSAGE" value="remove key" />
   </component>
   <component name="XDebuggerManager">
     <pin-to-top-manager>

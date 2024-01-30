@@ -41,6 +41,24 @@ public class PartyInfo implements Serializable
     }
 
     private static List<PartyInfo> infoList = new ArrayList<>();
+    private static boolean changed = true;
+
+    public static void writeInfoList(){
+        if(changed){
+            Fileable.write(PartyInfo.class, PartyInfo.getInfoList());
+            changed = false;
+        }
+    }
+
+    public static void updateInfoList(){
+        changed = true;
+    }
+
+    public static void addToInfoList(PartyInfo info){
+        infoList.add(info);
+        changed = true;
+    }
+
     public static List<PartyInfo> getInfoList(){
         if(infoList.isEmpty()) infoList = Fileable.readFromFile(PartyInfo.class);
 
@@ -65,11 +83,11 @@ public class PartyInfo implements Serializable
 
         long finalPeople = people;
 
-        UserInfo userInfo = new PartyInfo.UserInfo(userid, userName, "");
+        UserInfo userInfo = new UserInfo(userid, userName, "");
         Recipe recipe = getRecipe(event);
 
         PartyInfo info = new PartyInfo(type, userInfo, finalPeople, server, true, modalGuid, timestamp, recipe, quantity);
-        infoList.add(info);
+        addToInfoList(info);
         return info;
     }
     private static Recipe getRecipe(ChatInputInteractionEvent event) {
@@ -114,12 +132,15 @@ public class PartyInfo implements Serializable
     }
 
     public void addUser(UserInfo userInfo){
-        if(!userList.contains(userInfo))
+        if(!userList.contains(userInfo)) {
             userList.add(userInfo);
+            updateInfoList();
+        }
     }
 
     public void removeUser(String userid){
         userList.removeIf(user -> user.getId().equals(userid));
+        updateInfoList();
     }
 
 
@@ -129,11 +150,11 @@ public class PartyInfo implements Serializable
         String status = getStatus(partyInfo);
 
         String partyName = partyInfo.getType().toString();
-        if(partyInfo.getRecipe() != null) partyName = partyInfo.getRecipe().getRecipeMultiplier() + "x " + partyInfo.getRecipe().getRecipeName();
+        if(partyInfo.getRecipe() != null) partyName = partyInfo.quantity + "x " + partyInfo.getRecipe().getRecipeName();
 
         EmbedCreateSpec.Builder embed = EmbedCreateSpec.builder()
                 .color(partyInfo.getColor())
-                .title("Hosted by " + partyInfo.getHostInfo().name + "")
+                .title("Hosted by " + partyInfo.getHostInfo().getName() + "")
                 .author( "(" + status + ") " + partyInfo.getServer() + " " + partyInfo.getType() + " Party", "", partyInfo.getImageURL())
                 .description(partyInfo.getHostInfo().getPingText() + " is hosting a " + partyName + " party " + partyInfo.getTimestamp())
                 .thumbnail(partyInfo.getImageURL());
@@ -171,7 +192,7 @@ public class PartyInfo implements Serializable
                 int personCount = 0;
                 for (UserInfo userInfo : partyInfo.getUserList())
                 {
-                    if(userInfo.recipeRole.equals(roleCounter + "")){
+                    if(userInfo.getRecipeRole().equals(roleCounter + "")){
                         personCount++;
                         embed.addField("", personCount + ": " + userInfo.getPingText(), false);
                     }
@@ -196,13 +217,13 @@ public class PartyInfo implements Serializable
     }
 
 
-    public record UserInfo(String id, String name, String recipeRole) implements Serializable {
-        String getId(){return id;}
-        String getName(){return name;}
-        String getPingText(){
-            return "<@" + id + ">";
-        }
-    }
+//    public record UserInfo(String id, String name, String recipeRole) implements Serializable {
+//        String getId(){return id;}
+//        String getName(){return name;}
+//        String getPingText(){
+//            return "<@" + id + ">";
+//        }
+//    }
 
     public TypeInfo getType() {
         return type;
