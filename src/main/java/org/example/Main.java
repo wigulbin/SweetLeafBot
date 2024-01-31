@@ -31,7 +31,7 @@ public class Main {
 
 
     private static final String token = System.getenv("token");
-    public static final long guildId = Long.parseLong("937741716042174486");
+    public static final long guildId = Long.parseLong(System.getenv("guild_id"));
 //    private static final long guildId = Long.parseLong("1151985071272763452");
 
     static final String CHAT_INPUT_COMMAND_NAME = "party";
@@ -48,9 +48,11 @@ public class Main {
     {
         Recipes.loadRecipesFromFile();
         FileTask.loadObjectsFromFile();
+        log.info("Token: " + token);
+        log.info("guildId" + guildId);
 
         log.info("Starting up...");
-        DiscordClient.create(JSONFile.getJSONValueFromFile("discordAPIKey", "keys.json"))
+        DiscordClient.create(token)
                 .withGateway(client -> {
                     if(guildId == 0){
                         Mono<Void> handlePingCommand = createPingCommand(client);
