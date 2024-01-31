@@ -39,3 +39,4 @@ build/
 
 files/*
 logs
+/dependency-reduced-pom.xml
