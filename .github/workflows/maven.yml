@@ -15,12 +15,13 @@ on:
     branches: [ "master" ]
 
 
+
+env:
+  token: ${{ secrets.TOKEN  }}
+  guildId: "TEST"
+
 jobs:
   build:
-
-    env:
-      token: ${{ secrets.TOKEN  }}
-      guildId: ${{ vars.GUILD_ID }}
 
     runs-on: ubuntu-latest
 
