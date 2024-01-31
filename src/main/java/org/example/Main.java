@@ -22,14 +22,17 @@ import me.xdrop.fuzzywuzzy.FuzzySearch;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Mono;
 
-import java.time.Duration;
 import java.util.*;
-import java.util.concurrent.TimeoutException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class Main {
+    private static final Logger log = LoggerFactory.getLogger(Main.class);
+
+
     private static final String token = System.getenv("token");
-    //    private static final long guildId = Long.parseLong("937741716042174486");
-    private static final long guildId = Long.parseLong("1151985071272763452");
+    public static final long guildId = Long.parseLong(System.getenv("guild_id"));
+//    private static final long guildId = Long.parseLong("1151985071272763452");
 
     static final String CHAT_INPUT_COMMAND_NAME = "party";
     static final String MODAL_CUSTOM_ID = "my-modal";
@@ -37,18 +40,24 @@ public class Main {
     static final String SELECT_CUSTOM_ID = "my-select";
     static final String INPUT_CUSTOM_ID = "my-input";
 
+    static final String SIGN_UP_BUTTON_BASEID = "signup:";
+    static final String SIGN_UP_ROLE_BUTTON_BASEID = "signupRole:";
+    static final String DELETE_BUTTON_BASEID = "delete:";
+
     public static void main( String[] args )
     {
         Recipes.loadRecipesFromFile();
         FileTask.loadObjectsFromFile();
+        log.info("Token: " + token);
+        log.info("guildId" + guildId);
 
-        DiscordClient.create(JSONFile.getJSONValueFromFile("discordAPIKey", "keys.json"))
+        log.info("Starting up...");
+        DiscordClient.create(token)
                 .withGateway(client -> {
                     if(guildId == 0){
                         Mono<Void> handlePingCommand = createPingCommand(client);
                         return handlePingCommand;
                     } else {
-                        System.out.println(client);
                         List<ApplicationCommandOptionData> options = getApplicationCommandOptionData();
 
                         ApplicationCommandRequest example = ApplicationCommandRequest.builder()
@@ -64,19 +73,17 @@ public class Main {
                                 String commandGuid = Common.createGUID();
                                 PartyInfo partyInfo = PartyInfo.createFromEvent(event, commandGuid);
 
-                                ButtonInfo buttonInfo = createButtons(client, partyInfo, commandGuid);
+                                ButtonInfo buttonInfo = createButtons(partyInfo, commandGuid);
 
                                 return event.reply()
                                         .withEmbeds(partyInfo.createEmbed())
-//                                    .withComponents(ActionRow.of(buttonInfo.buttons))
-                                        .withComponents(buttonInfo.getActionRows())
-                                        .then(buttonInfo.listener);
+                                        .withComponents(buttonInfo.getActionRows());
                             }
                             return Mono.empty();
                         });
 
                         Publisher<?> onModal = client.on(ModalSubmitInteractionEvent.class, event -> {
-                            if (REMOVE_MODAL_ID.equals(event.getCustomId())) {
+                            if (event.getCustomId().startsWith(REMOVE_MODAL_ID)) {
                                 for (TextInput component : event.getComponents(TextInput.class)) {
                                     String[] fields = component.getCustomId().split("_");
                                     if(fields.length == 3) {
@@ -89,7 +96,6 @@ public class Main {
 
                                                 return event.edit("")
                                                         .withEmbeds(partyInfo.createEmbed());
-//                                                    .withComponents(ActionRow.of(button, deleteButton));
                                             }
                                         }
                                     }
@@ -140,12 +146,81 @@ public class Main {
                             return null;
                         });
 
+                        Publisher<?> onButtonPress = client.on(ButtonInteractionEvent.class, buttonEvent -> {
+                            try{
+                                String buttonId = buttonEvent.getCustomId();
+
+                                if (buttonEvent.getCustomId().startsWith(SIGN_UP_BUTTON_BASEID)) {
+                                    PartyInfo partyInfo = PartyInfo.getPartyInfoByGuid(buttonId.split(":")[1]);
+
+                                    String buttonUserName = buttonEvent.getInteraction().getUser().getGlobalName().get();
+                                    String buttonUserid = buttonEvent.getInteraction().getUser().getId().asString();
+
+                                    partyInfo.addUser(new UserInfo(buttonUserid, buttonUserName));
+                                    return buttonEvent.edit("")
+                                            .withEmbeds(partyInfo.createEmbed())
+                                            .doOnError(e -> log.error("Button Error", e));
+                                }
+
+                                if (buttonEvent.getCustomId().startsWith(SIGN_UP_ROLE_BUTTON_BASEID)) {
+                                    PartyInfo partyInfo = PartyInfo.getPartyInfoByGuid(buttonId.split(":")[1]);
+                                    String buttonUserName = buttonEvent.getInteraction().getUser().getGlobalName().get();
+                                    String buttonUserid = buttonEvent.getInteraction().getUser().getId().asString();
+                                    String buttonValue = "";
+                                    if(buttonEvent.getCustomId().split(":").length > 2)
+                                        buttonValue = buttonEvent.getCustomId().split(":")[2];
+
+                                    partyInfo.addUser(new UserInfo(buttonUserid, buttonUserName, buttonValue));
+
+                                    return buttonEvent.edit("")
+                                            .withEmbeds(partyInfo.createEmbed())
+                                            .doOnError(e -> log.error("Button Error", e));
+                                }
+
+                                if (buttonEvent.getCustomId().startsWith(DELETE_BUTTON_BASEID)) {
+                                    String guid = buttonId.split(":")[1];
+                                    String modalGuid = Common.createGUID();
+                                    PartyInfo partyInfo = PartyInfo.getPartyInfoByGuid(guid);
+                                    String buttonUserid = buttonEvent.getInteraction().getUser().getId().asString();
+
+                                    if (buttonUserid.equals(partyInfo.getHostInfo().getId())) {
+
+                                        InteractionPresentModalSpec.Builder spec = InteractionPresentModalSpec.builder()
+                                                .title("Remove User from event: ")
+                                                .customId(REMOVE_MODAL_ID + "_" + SIGN_UP_BUTTON_BASEID + guid + "_" + modalGuid);
+
+                                        log.info(partyInfo.getUserList().size() + "");
+                                        int counter = 1;
+                                        for (UserInfo userInfo : partyInfo.getUserList()) {
+                                            spec.addComponent(ActionRow.of(TextInput.small(REMOVE_MODAL_ID + "_" + SIGN_UP_BUTTON_BASEID + guid + "_" + userInfo.getId() + "_" + counter, userInfo.getName(), "Removed").required(false).prefilled(userInfo.getName())));
+                                        }
+
+                                        return buttonEvent.presentModal(spec.build());
+                                    } else {
+                                        partyInfo.removeUser(buttonUserid);
+                                    }
+
+                                    return buttonEvent.edit("")
+                                            .withEmbeds(partyInfo.createEmbed())
+                                            .doOnError(e -> log.error("Button Error", e));
+
+                                }
+                            } catch (Exception e){
+                                log.error("Button Error", e);
+                            }
+
+                            // Ignore it
+                            return Mono.empty();
+                        }).doOnError(e -> log.error("Button Error", e));
+
                         return GuildCommandRegistrar.create(client.getRestClient(), commands)
                                 .registerCommands(Snowflake.of(guildId))
-//                            .thenMany(Mono.when(onChatInput, onModal));
-                                .thenMany(Mono.when(onChatInput, onModal, onChat));
+                                .thenMany(Mono.when(onChatInput, onModal, onChat, onButtonPress).doOnError(e -> log.error("Error", e)))
+                                .doOnError(e -> log.error("Error", e));
                     }
                 })
+                .doOnError(e -> log.error("Failed to authenticate with Discord", e))
+                .doOnSuccess(result -> log.info("Connected to Discord"))
                 .block();
     }
 
@@ -164,7 +239,7 @@ public class Main {
     }
 
 
-    private static ButtonInfo createButtons(GatewayDiscordClient client, PartyInfo partyInfo, String commandGuid) {
+    private static ButtonInfo createButtons(PartyInfo partyInfo, String commandGuid) {
         List<Button> buttons = new ArrayList<>();
 
         String signUpButtonGUID     = "signup:" + commandGuid;
@@ -174,7 +249,6 @@ public class Main {
         List<Button> roleButtons = new ArrayList<>();
         if(partyInfo.getRecipe() != null) {
             Recipe recipe = partyInfo.getRecipe();
-            System.out.println(recipe.getRecipeName());
             int id = 0;
             for (RecipeRole role : recipe.getRoles()) {
                 roleButtons.add(Button.primary(signUpRoleButtonGUIDBase + (id++), role.getRoleName()));
@@ -189,64 +263,7 @@ public class Main {
         Button deleteButton = Button.danger(deleteButtonGUID, "Remove Name");
         buttons.add(deleteButton);
 
-        // Issues with adding self to multiple roles (got stuck with 4 and could not add more)
-        Mono<Void> buttonListener = client.on(ButtonInteractionEvent.class, buttonEvent -> {
-                    if (buttonEvent.getCustomId().equals(signUpButtonGUID)) {
-                        String buttonUserName = buttonEvent.getInteraction().getUser().getGlobalName().get();
-                        String buttonUserid = buttonEvent.getInteraction().getUser().getId().asString();
-
-                        partyInfo.addUser(new PartyInfo.UserInfo(buttonUserid, buttonUserName, ""));
-                        return buttonEvent.edit("")
-                                .withEmbeds(partyInfo.createEmbed());
-//                                .withComponents(ActionRow.of(buttons));
-                    }
-
-                    if (buttonEvent.getCustomId().startsWith(signUpRoleButtonGUIDBase)) {
-                        String buttonUserName = buttonEvent.getInteraction().getUser().getGlobalName().get();
-                        String buttonUserid = buttonEvent.getInteraction().getUser().getId().asString();
-                        String buttonValue = "";
-                        if(buttonEvent.getCustomId().split(":").length > 2)
-                            buttonValue = buttonEvent.getCustomId().split(":")[2];
-
-                        partyInfo.addUser(new PartyInfo.UserInfo(buttonUserid, buttonUserName, buttonValue));
-
-                        return buttonEvent.edit("")
-                                .withEmbeds(partyInfo.createEmbed());
-//                                .withComponents(ActionRow.of(buttons));
-                    }
-
-                    if (buttonEvent.getCustomId().equals(deleteButtonGUID)) {
-                        String buttonUserid = buttonEvent.getInteraction().getUser().getId().asString();
-
-                        if (buttonUserid.equals(partyInfo.getHostInfo().getId())) {
-
-                            InteractionPresentModalSpec.Builder spec = InteractionPresentModalSpec.builder()
-                                    .title("Remove User from event: ")
-                                    .customId(REMOVE_MODAL_ID);
-
-                            for (PartyInfo.UserInfo userInfo : partyInfo.getUserList())
-                                spec.addComponent(ActionRow.of(TextInput.small(REMOVE_MODAL_ID + "_" + signUpButtonGUID + "_" + userInfo.getId(), userInfo.getName(), "Removed").required(false).prefilled(userInfo.getName())));
-
-                            return buttonEvent.presentModal(spec.build());
-                        } else {
-                            partyInfo.removeUser(buttonUserid);
-                        }
-
-                        return buttonEvent.edit("")
-                                .withEmbeds(partyInfo.createEmbed());
-//                                .withComponents(ActionRow.of(buttons));
-
-                    }
-
-                    // Ignore it
-                    return Mono.empty();
-
-                })
-                .timeout(Duration.ofDays(3))      //Change to be date set for - date submitted
-                .onErrorResume(TimeoutException.class, ignore -> Mono.empty())
-                .then();
-
-        return new ButtonInfo(buttonListener, buttons);
+        return new ButtonInfo(null, buttons);
     }
 
     record ButtonInfo(Mono<Void> listener, List<Button> buttons){
@@ -261,7 +278,7 @@ public class Main {
                     actionRows.add(ActionRow.of(buttons.subList(i, i + Math.min(5, buttons.size()-i))));
                 }
             } catch (Exception e){
-                System.out.println(e);
+                log.error("Button Action Row Error", e);
             }
 
             return actionRows;
