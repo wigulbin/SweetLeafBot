@@ -14,12 +14,13 @@ on:
   pull_request:
     branches: [ "master" ]
 
-env:
-  token: ${{ secrets.TOKEN  }}
-  guildId: ${{ vars.GUILD_ID }}
 
 jobs:
   build:
+
+    env:
+      token: ${{ secrets.TOKEN  }}
+      guildId: ${{ vars.GUILD_ID }}
 
     runs-on: ubuntu-latest
 
