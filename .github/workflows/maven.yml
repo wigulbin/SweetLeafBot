@@ -16,7 +16,7 @@ on:
 
 env:
   token: ${{ secrets.TOKEN  }}
-  guildId: ${{ env.GUILD_ID  }}
+  guildId: $GUILD_ID
 
 jobs:
   build:
@@ -25,7 +25,7 @@ jobs:
 
     steps:
       - name: Print Guild ID
-        run: echo "Hello ${{env.GUILD_ID}}"
+        run: echo "Hello $GUILD_ID"
       - uses: actions/checkout@v3
       - name: Set up JDK 21
         uses: actions/setup-java@v3
