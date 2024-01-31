@@ -16,7 +16,7 @@ on:
 
 env:
   token: ${{ secrets.TOKEN  }}
-  guildId: $GUILD_ID
+  guildId: ${{ vars.GUILD_ID }}
 
 jobs:
   build:
