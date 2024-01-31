@@ -8,4 +8,8 @@ public class CommonTest {
     void demoTest(){
         assertTrue(true);
     }
+    @Test
+    void envTest(){
+        assertTrue(!System.getenv("token").isEmpty());
+    }
 }
