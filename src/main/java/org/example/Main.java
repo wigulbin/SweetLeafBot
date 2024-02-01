@@ -48,8 +48,6 @@ public class Main {
     {
         Recipes.loadRecipesFromFile();
         FileTask.loadObjectsFromFile();
-        log.info("Token: " + token);
-        log.info("guildId" + guildId);
 
         log.info("Starting up...");
         DiscordClient.create(token)
