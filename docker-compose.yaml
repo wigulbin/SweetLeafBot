@@ -1,0 +1,16 @@
+version: '1.1'
+services:
+  sweetleafbot:
+    image: sweetleafbot
+    volumes:
+      - files:/files
+      - logs:/logs
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+      args:
+        - guild_id=${guild_id}
+        - token=${token}
+volumes:
+  files:
+  logs:
