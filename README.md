@@ -1,3 +1,5 @@
+# Sweet Leaf Bot
+ 
 Discord bot to aid with party signups for various activities for the game Palia.
   - Bot is designed to work in just one server at a time
   - **mvn package** to create uber-jar that can be run as is.
