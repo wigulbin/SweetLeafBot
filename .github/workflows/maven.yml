@@ -17,7 +17,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-
+    environment: Sweet Leaf Bot
     steps:
       - uses: actions/checkout@v3
       - name: guildid
@@ -33,6 +33,7 @@ jobs:
 
   gcloudcompute:
     runs-on: ubuntu-latest
+    environment: Sweet Leaf Bot
     permissions:
       contents: 'read'
       id-token: 'write'
