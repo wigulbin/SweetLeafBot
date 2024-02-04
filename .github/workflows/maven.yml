@@ -22,7 +22,6 @@ env:
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
 
     steps:
@@ -38,3 +37,31 @@ jobs:
       - name: Build with Maven
         run: mvn -B package --file pom.xml
 
+  gcloudcompute:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+
+    steps:
+    - uses: 'actions/checkout@v4'
+
+    - id: 'auth'
+      uses: 'google-github-actions/auth@v2'
+      with:
+        workload_identity_provider: 'projects/9814696193/locations/global/workloadIdentityPools/sweet-leaf-pool/providers/sweet-leaf-provider'
+        service_account: '9814696193-compute@developer.gserviceaccount.com'
+
+    - id: 'compute-ssh'
+      uses: 'google-github-actions/ssh-compute@v1'
+      with:
+        instance_name: 'sweet-leaf-bot'
+        zone: 'us-central1-c'
+        ssh_private_key: '${{ secrets.GCP_SSH_PRIVATE_KEY }}'
+        command: 'echo Hello world'
+
+    # Example of using the output
+    - id: 'test'
+      run: |-
+        echo '${{ steps.compute-ssh.outputs.stdout }}'
+        echo '${{ steps.compute-ssh.outputs.stderr }}'
