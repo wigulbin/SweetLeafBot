@@ -49,7 +49,7 @@ jobs:
       with:
         instance_name: 'sweet-leaf-bot'
         zone: 'us-central1-c'
-        ssh_private_key: ${{ secrets.TOKEN }}
+        ssh_private_key: '${{ secrets.TOKEN }}'
         command: 'echo Hello world'
 
     # Example of using the output
