@@ -52,7 +52,7 @@ jobs:
       with:
         instance_name: 'sweet-leaf-bot'
         zone: 'us-central1-c'
-        ssh_private_key: '${{ vars.GUILD_ID }}'
+        ssh_private_key: '${{ secrets.GCP_SSH_PRIVATE_KEY }}'
         command: 'echo Hello world'
 
     # Example of using the output
