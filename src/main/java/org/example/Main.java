@@ -49,7 +49,7 @@ public class Main {
         Recipes.loadRecipesFromFile();
         FileTask.loadObjectsFromFile();
 
-        log.info("Starting up2...");
+        log.info("Starting up...");
         DiscordClient.create(token)
                 .withGateway(client -> {
                     if(guildId == 0){
