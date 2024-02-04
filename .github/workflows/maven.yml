@@ -21,7 +21,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: guildid
-        run: echo "${{vars.GUILD_ID}}"
+        run: echo "${{ secrets.TOKEN }}"
       - name: Set up JDK 21
         uses: actions/setup-java@v3
         with:
