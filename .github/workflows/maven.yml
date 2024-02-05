@@ -18,6 +18,9 @@ jobs:
   build:
     runs-on: ubuntu-latest
     environment: Sweet Leaf Bot
+    permissions:
+      contents: 'read'
+      id-token: 'write'
     steps:
       - uses: actions/checkout@v3
       - name: guildid
@@ -30,7 +33,13 @@ jobs:
           cache: maven
       - name: Build with Maven
         run: mvn -B package --file pom.xml
-      
+
+      - id: 'auth'
+        uses: 'google-github-actions/auth@v2'
+        with:
+          token_format: 'access_token'
+          workload_identity_provider: '${{ vars.IDENTITY_PROVIDER }}'
+          service_account: '${{ vars.SERVICE_ACCOUNT }}'
       - name: Transfer jar
         uses:  wigulbin/ssh-compute-scp@v1
         with:
