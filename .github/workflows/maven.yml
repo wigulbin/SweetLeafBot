@@ -57,8 +57,6 @@ jobs:
         command: 'echo Hello world1'
 
     # Example of using the output
-    - id: 'test'
-    - uses: 'google-github-actions/auth@v2'
     - name: "Test"
       run: |-
         echo '${{ steps.compute-ssh.outputs.stdout }}'
