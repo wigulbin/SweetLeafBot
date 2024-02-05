@@ -44,6 +44,7 @@ jobs:
     - id: 'auth'
       uses: 'google-github-actions/auth@v2'
       with:
+        token_format: 'access_token'
         workload_identity_provider: '${{ vars.IDENTITY_PROVIDER }}'
         service_account: '${{ vars.SERVICE_ACCOUNT }}'
 
