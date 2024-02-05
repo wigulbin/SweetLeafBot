@@ -45,7 +45,7 @@ jobs:
       uses: 'google-github-actions/auth@v2'
       with:
         workload_identity_provider: 'projects/9814696193/locations/global/workloadIdentityPools/sweet-leaf-pool/providers/sweet-leaf-provider'
-        service_account: '${{ vars.SERVICE_ACCOUNT }}'
+        provider_id: 'sweet-leaf-bot'
 
     - id: 'compute-ssh'
       uses: 'google-github-actions/ssh-compute@v1'
