@@ -30,6 +30,14 @@ jobs:
           cache: maven
       - name: Build with Maven
         run: mvn -B package --file pom.xml
+
+  jartransfer:
+    runs-on: ubuntu-latest
+    environment: Sweet Leaf Bot
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+    steps:
       - name: Transfer jar
         uses:  ./.github/actions/ssh-compute-scp
         with:
