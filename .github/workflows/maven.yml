@@ -39,6 +39,7 @@ jobs:
           ssh_private_key: '${{ secrets.GCP_SSH_PRIVATE_KEY }}'
           sourceDir: '/home/runner/work/SweetLeafBot/SweetLeafBot/target/SweetLeafBot-1.0-SNAPSHOT-shaded.jar'
           targetDir: 'wgulbin@sweet-leaf-bot:~'
+          command: 'echo Hello world1'
 
 
   gcloudcompute:
