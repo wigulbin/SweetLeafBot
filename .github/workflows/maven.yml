@@ -47,7 +47,7 @@ jobs:
           zone: 'us-central1-c'
           ssh_private_key: '${{ secrets.GCP_SSH_PRIVATE_KEY }}'
           sourceDir: '/home/runner/work/SweetLeafBot/SweetLeafBot/target/SweetLeafBot-1.0-SNAPSHOT.jar'
-          targetDir: 'wgulbin@sweet-leaf-bot:~/tmp'
+          targetDir: 'wigulbin@sweet-leaf-bot:~/tmp'
           command: 'echo Hello world1'
 
 
