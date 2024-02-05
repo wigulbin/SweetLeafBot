@@ -58,6 +58,7 @@ jobs:
 
     # Example of using the output
     - id: 'test'
+    - name: "Test"
       run: |-
         echo '${{ steps.compute-ssh.outputs.stdout }}'
         echo '${{ steps.compute-ssh.outputs.stderr }}'
