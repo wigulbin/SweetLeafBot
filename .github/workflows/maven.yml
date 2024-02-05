@@ -53,6 +53,7 @@ jobs:
 
   gcloudcompute:
     runs-on: ubuntu-latest
+    needs: build
     environment: Sweet Leaf Bot
     permissions:
       contents: 'read'
@@ -74,7 +75,7 @@ jobs:
         instance_name: 'sweet-leaf-bot'
         zone: 'us-central1-c'
         ssh_private_key: '${{ secrets.GCP_SSH_PRIVATE_KEY }}'
-        command: 'echo Hello world1'
+        command: '${{ vars.COMMAND_TO_RUN }}'
 
     # Example of using the output
     - name: "Test"
