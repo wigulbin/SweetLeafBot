@@ -30,22 +30,16 @@ jobs:
           cache: maven
       - name: Build with Maven
         run: mvn -B package --file pom.xml
-
-  jartransfer:
-    runs-on: ubuntu-latest
-    environment: Sweet Leaf Bot
-    permissions:
-      contents: 'read'
-      id-token: 'write'
-    steps:
+      
       - name: Transfer jar
-        uses:  ./.github/actions/ssh-compute-scp
+        uses:  wigulbin/ssh-compute-scp@v1
         with:
           instance_name: 'sweet-leaf-bot'
           zone: 'us-central1-c'
           ssh_private_key: '${{ secrets.GCP_SSH_PRIVATE_KEY }}'
           sourceDir: '/home/runner/work/SweetLeafBot/SweetLeafBot/target/SweetLeafBot-1.0-SNAPSHOT-shaded.jar'
           targetDir: 'wgulbin@sweet-leaf-bot:~'
+
 
   gcloudcompute:
     runs-on: ubuntu-latest
