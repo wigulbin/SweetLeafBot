@@ -341,7 +341,7 @@ public class Main {
 
                 PartyInfo partyInfo = PartyInfo.getPartyInfoByGuid(guid);
                 partyInfo.setStatus(false);
-                return event.reply().withEphemeral(true).withContent("Done!")
+                return event.reply().withEphemeral(true).withContent("Closing " + partyInfo + "...")
                         .doFinally(s -> updateMessage(event, partyInfo));
             }
             return Mono.empty();
@@ -355,8 +355,7 @@ public class Main {
 
             // Retrieve the message using the message ID
             Channel channel = event.getClient().getChannelById(Snowflake.of(partyInfo.getChannelid())).block();
-            if (channel instanceof TextChannel) {
-                TextChannel textChannel = (TextChannel) channel;
+            if (channel instanceof TextChannel textChannel) {
                 textChannel.getMessageById(Snowflake.of(messageId))
                         .flatMap(message -> {
                             // Create a new Embed with updated information
