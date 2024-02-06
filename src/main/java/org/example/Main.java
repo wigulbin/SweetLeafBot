@@ -3,10 +3,7 @@ package org.example;
 import discord4j.common.util.Snowflake;
 import discord4j.core.DiscordClient;
 import discord4j.core.GatewayDiscordClient;
-import discord4j.core.event.domain.interaction.ButtonInteractionEvent;
-import discord4j.core.event.domain.interaction.ChatInputAutoCompleteEvent;
-import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
-import discord4j.core.event.domain.interaction.ModalSubmitInteractionEvent;
+import discord4j.core.event.domain.interaction.*;
 import discord4j.core.event.domain.message.MessageCreateEvent;
 import discord4j.core.object.Embed;
 import discord4j.core.object.command.ApplicationCommandInteractionOptionValue;
@@ -48,17 +45,18 @@ public class Main {
     static final String CHAT_INPUT_COMMAND_NAME = "party";
     static final String CHAT_INPUT_REMOVE_COMMAND_NAME = "removeuser";
     static final String CHAT_INPUT_CLOSE_COMMAND_NAME = "closeparty";
-    static final String MODAL_CUSTOM_ID = "my-modal";
     static final String REMOVE_MODAL_ID = "removeModal";
-    static final String SELECT_CUSTOM_ID = "my-select";
-    static final String INPUT_CUSTOM_ID = "my-input";
     static final String CLOSE_PARTY_ID = "closeParty:";
 
     static final String SIGN_UP_BUTTON_BASEID = "signup:";
     static final String SIGN_UP_ROLE_BUTTON_BASEID = "signupRole:";
     static final String DELETE_BUTTON_BASEID = "delete:";
 
+    static final String REMOVE_USER_SELECT = "removeUserSelect:";
+    static final String REMOVE_USER_BUTTON = "removeUserButton:";
+
     static final Set<Snowflake> MOD_ROLES = Set.of(Snowflake.of("1156959674655047783"), Snowflake.of("1152059333916512297"));
+    public static final String BOT_NAME = "Silly Lil Bot";
 
     public static void main( String[] args )
     {
@@ -78,11 +76,12 @@ public class Main {
                         Publisher<?> onModal        = getPublisherOnModal(client);
                         Publisher<?> onChat         = getPublisherOnChatInputAutoComplete(client);
                         Publisher<?> onButtonPress  = getPublisherOnButtonInteraction(client);
+                        Publisher<?> onSelectMenu   = getPublisherOnSelectInteraction(client);
                         Publisher<?> onMessage      = getOnMessage(client);
 
                         return GuildCommandRegistrar.create(client.getRestClient(), commands)
                                 .registerCommands(Snowflake.of(guildId))
-                                .thenMany(Mono.when(onChatInput, onModal, onChat, onButtonPress, onMessage).doOnError(e -> log.error("Error", e)))
+                                .thenMany(Mono.when(onChatInput, onModal, onChat, onButtonPress, onMessage, onSelectMenu).doOnError(e -> log.error("Error", e)))
                                 .doOnError(e -> log.error("Error", e));
                     }
                 })
@@ -90,6 +89,30 @@ public class Main {
                 .doOnSuccess(result -> log.info("Connected to Discord"))
                 .block();
     }
+
+    private static Publisher<?> getPublisherOnSelectInteraction(GatewayDiscordClient client) {
+        Publisher<?> onButtonPress = client.on(SelectMenuInteractionEvent.class, selectEvent -> {
+            try{
+                String selectId = selectEvent.getCustomId();
+
+                if (selectEvent.getCustomId().startsWith(REMOVE_USER_SELECT)) {
+                    PartyInfo partyInfo = PartyInfo.getPartyInfoByGuid(selectId.split(":")[1]);
+                    String userid = selectEvent.getValues().stream().findFirst().orElse("");
+
+                    return selectEvent.edit("Are you sure?")
+                            .withEphemeral(true)
+                            .withComponents(ActionRow.of(Button.danger(REMOVE_USER_BUTTON + partyInfo.getCommandGuid() + ":" + userid, "Remove")));
+                }
+            } catch (Exception e){
+                log.error("Button Error", e);
+            }
+
+            // Ignore it
+            return Mono.empty();
+        }).doOnError(e -> log.error("Button Error", e));
+        return onButtonPress;
+    }
+
 
     private static Publisher<?> getPublisherOnButtonInteraction(GatewayDiscordClient client) {
         Publisher<?> onButtonPress = client.on(ButtonInteractionEvent.class, buttonEvent -> {
@@ -102,6 +125,9 @@ public class Main {
                     String buttonUserName = buttonEvent.getInteraction().getUser().getGlobalName().get();
                     String buttonUserid = buttonEvent.getInteraction().getUser().getId().asString();
 
+                    if(buttonEvent.getInteraction().getMember().isPresent())
+                        buttonUserName = buttonEvent.getInteraction().getMember().get().getDisplayName();
+
                     partyInfo.addUser(new UserInfo(buttonUserid, buttonUserName));
                     return buttonEvent.edit("")
                             .withEmbeds(partyInfo.createEmbed())
@@ -112,6 +138,10 @@ public class Main {
                     PartyInfo partyInfo = PartyInfo.getPartyInfoByGuid(buttonId.split(":")[1]);
                     String buttonUserName = buttonEvent.getInteraction().getUser().getGlobalName().get();
                     String buttonUserid = buttonEvent.getInteraction().getUser().getId().asString();
+
+                    if(buttonEvent.getInteraction().getMember().isPresent())
+                        buttonUserName = buttonEvent.getInteraction().getMember().get().getDisplayName();
+
                     String buttonValue = "";
                     if(buttonEvent.getCustomId().split(":").length > 2)
                         buttonValue = buttonEvent.getCustomId().split(":")[2];
@@ -135,7 +165,6 @@ public class Main {
                                 .title("Remove User from event: ")
                                 .customId(REMOVE_MODAL_ID + "_" + SIGN_UP_BUTTON_BASEID + guid + "_" + modalGuid);
 
-                        log.info(partyInfo.getUserList().size() + "");
                         int counter = 1;
                         for (UserInfo userInfo : partyInfo.getUserList()) {
                             spec.addComponent(ActionRow.of(TextInput.small(REMOVE_MODAL_ID + "_" + SIGN_UP_BUTTON_BASEID + guid + "_" + userInfo.getId() + "_" + counter, userInfo.getName(), "Removed").required(false).prefilled(userInfo.getName())));
@@ -165,7 +194,6 @@ public class Main {
                                 .title("Remove User from event: ")
                                 .customId(REMOVE_MODAL_ID + "_" + SIGN_UP_BUTTON_BASEID + guid + "_" + modalGuid);
 
-                        log.info(partyInfo.getUserList().size() + "");
                         int counter = 1;
                         for (UserInfo userInfo : partyInfo.getUserList()) {
                             spec.addComponent(ActionRow.of(TextInput.small(REMOVE_MODAL_ID + "_" + SIGN_UP_BUTTON_BASEID + guid + "_" + userInfo.getId() + "_" + counter, userInfo.getName(), "Removed").required(false).prefilled(userInfo.getName())));
@@ -178,6 +206,19 @@ public class Main {
                     return buttonEvent.edit("")
                             .withEmbeds(partyInfo.createEmbed())
                             .doOnError(e -> log.error("Button Error", e));
+
+                }
+
+                if (buttonEvent.getCustomId().startsWith(REMOVE_USER_BUTTON)) {
+                    String guid = buttonId.split(":")[1];
+                    String userid = buttonId.split(":")[2];
+
+                    PartyInfo partyInfo = PartyInfo.getPartyInfoByGuid(guid);
+                    partyInfo.removeUser(userid);
+
+                    return buttonEvent.edit("Success").withComponents(new ArrayList<>())
+                            .doOnError(e -> log.error("Button Error", e))
+                            .doFinally(s -> updateMessage(buttonEvent, partyInfo));
 
                 }
             } catch (Exception e){
@@ -288,7 +329,7 @@ public class Main {
             System.out.println(message.getContent());
 
 
-            if(message.getAuthor().get().getUsername().equals("Silly Lil Bot")){
+            if(message.getAuthor().get().getUsername().equals(BOT_NAME)){
                 Embed embed = message.getEmbeds().stream().findFirst().orElse(null);
                 if(embed != null && embed.getFooter().isPresent()){
                     String id = embed.getFooter().get().getText();
@@ -297,8 +338,6 @@ public class Main {
                         info.setMessageid(message.getId().asLong());
                         info.setChannelid(message.getChannelId().asLong());
 
-                        log.info(message.getId().asLong() + "");
-                        log.info(message.getChannelId().asLong() + "");
                         PartyInfo.writeInfoList();
                     }
                 }
@@ -326,18 +365,21 @@ public class Main {
             }
 
             if(CHAT_INPUT_REMOVE_COMMAND_NAME.equalsIgnoreCase(event.getCommandName())) {
+                String guid = event.getOption("partyid").get().getValue().get().asString();
+                PartyInfo partyInfo = PartyInfo.getPartyInfoByGuid(guid);
 
+                if(partyInfo.getUserList().isEmpty())
+                    return event.reply("There are no users to remove").withEphemeral(true);
+
+                SelectMenu selectMenu = SelectMenu.of(REMOVE_USER_SELECT + guid, partyInfo.getUserList().stream().map(user -> SelectMenu.Option.of(user.getName(), user.getId())).toList());
+
+                return event.reply("Select a user to remove:")
+                        .withComponents(ActionRow.of(selectMenu))
+                        .withEphemeral(true);
             }
 
             if(CHAT_INPUT_CLOSE_COMMAND_NAME.equalsIgnoreCase(event.getCommandName())) {
                 String guid = event.getOption("partyid").get().getValue().get().asString();
-
-//                return client.getMessageById(Snowflake.of(partyInfo.getChannelid()), Snowflake.of(partyInfo.getMessageid())).map(message -> {
-//                    return message.edit(MessageEditSpec.builder().embeds(List.of(partyInfo.createEmbed())).build())
-//                            .doOnError(e -> log.error("Button Error", e));
-//                });
-//                return event.editFollowup(Snowflake.of(partyInfo.getMessageid()))
-//                        .withEmbeds(partyInfo.createEmbed());
 
                 PartyInfo partyInfo = PartyInfo.getPartyInfoByGuid(guid);
                 partyInfo.setStatus(false);
@@ -349,7 +391,7 @@ public class Main {
         return onChatInput;
     }
 
-    private static void updateMessage(ChatInputInteractionEvent event, PartyInfo partyInfo){
+    private static void updateMessage(DeferrableInteractionEvent event, PartyInfo partyInfo){
         {
             long messageId = partyInfo.getMessageid(); // Replace with the actual message ID
 
@@ -361,8 +403,14 @@ public class Main {
                             // Create a new Embed with updated information
                             EmbedCreateSpec embed = partyInfo.createEmbed();
 
+                            List<LayoutComponent> buttons = new ArrayList<>();
+                            if(partyInfo.isStatus()){
+                                ButtonInfo buttonInfo = createButtons(partyInfo, partyInfo.getCommandGuid());
+                                buttons.addAll(buttonInfo.getActionRows());
+                            }
+
                             // Update the message with the new Embed
-                            return message.edit(MessageEditSpec.builder().embeds(List.of(embed)).components(new ArrayList<>()).build());
+                            return message.edit(MessageEditSpec.builder().embeds(List.of(embed)).components(buttons).build());
                         }).subscribe();
             }
         }

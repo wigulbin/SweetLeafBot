@@ -8,6 +8,10 @@ target/
 .idea/jarRepositories.xml
 .idea/compiler.xml
 .idea/libraries/
+.idea/encodings.xml
+.idea/misc.xml
+.idea/vcs.xml
+.idea/workspace.xml
 *.iws
 *.iml
 *.ipr
@@ -41,3 +45,4 @@ files/*
 logs
 /dependency-reduced-pom.xml
 .env
+.idea/workspace.xml
