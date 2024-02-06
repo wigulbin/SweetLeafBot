@@ -6,6 +6,8 @@ import discord4j.rest.util.Color;
 
 import java.io.*;
 import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -19,6 +21,9 @@ public class PartyInfo implements Serializable
     private String commandGuid;
     private String timestamp = "";
     private long quantity;
+    private LocalDateTime created;
+    private long messageid;
+    private long channelid;
 
     private Recipe recipe;
 
@@ -36,6 +41,7 @@ public class PartyInfo implements Serializable
         this.timestamp = timestamp;
         this.recipe = recipe;
         this.quantity = quantity;
+        this.created = LocalDateTime.now();
 
         this.userList = new ArrayList<>();
     }
@@ -69,9 +75,18 @@ public class PartyInfo implements Serializable
         return getInfoList().stream().filter(info -> info.getCommandGuid().equals(guid)).findFirst().orElse(null);
     }
 
+    @Override
+    public String toString() {
+        return server + " " + type + " created on " + created.format(DateTimeFormatter.ofPattern("dd/MM/yy hh:mm a")) + " by " + hostInfo.getName();
+    }
+
     public static PartyInfo createFromEvent(ChatInputInteractionEvent event, String modalGuid) {
         String userName = event.getInteraction().getUser().getGlobalName().get();
         String userid = event.getInteraction().getUser().getId().asString();
+
+        if(event.getInteraction().getMember().isPresent())
+            userName = event.getInteraction().getMember().get().getDisplayName();
+
 
         TypeInfo type = TypeInfo.getType(event.getOption("type").get().getValue().get().asString());
         long people = getPeople(event);
@@ -159,13 +174,13 @@ public class PartyInfo implements Serializable
                 .description(partyInfo.getHostInfo().getPingText() + " is hosting a " + partyName + " party " + partyInfo.getTimestamp())
                 .thumbnail(partyInfo.getImageURL());
 
-
         if(partyInfo.getRecipe() == null)
             embed = embed.addField("Participants:", "", false);
 
         embed = addUsersToEmbed(partyInfo, embed);
 
         embed = embed.timestamp(Instant.now());
+        embed = embed.footer(getCommandGuid(), "");
 
         return embed.build();
     }
@@ -304,5 +319,21 @@ public class PartyInfo implements Serializable
 
     public void setRecipe(Recipe recipe) {
         this.recipe = recipe;
+    }
+
+    public long getMessageid() {
+        return messageid;
+    }
+
+    public void setMessageid(long messageid) {
+        this.messageid = messageid;
+    }
+
+    public long getChannelid() {
+        return channelid;
+    }
+
+    public void setChannelid(long channelid) {
+        this.channelid = channelid;
     }
 }
