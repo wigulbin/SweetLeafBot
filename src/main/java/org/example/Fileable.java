@@ -1,9 +1,15 @@
 package org.example;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -11,37 +17,39 @@ public class Fileable implements Serializable {
     private static final Logger log = LoggerFactory.getLogger(Fileable.class);
 
     public static <T> void write(Class<T> className, List<T> infoList){
-        String filename = className.getSimpleName() + "_" + Main.guildId + ".txt";
+        String filename = className.getSimpleName() + "_" + Main.guildId + ".json";
 
-        try(FileOutputStream f = new FileOutputStream("files/" + filename); ObjectOutputStream o = new ObjectOutputStream(f);){
-            for (T info : infoList)
-                o.writeObject(info);
-
+        try(BufferedWriter writer = new BufferedWriter(new FileWriter("files" + File.separator + filename))){
+            ObjectMapper mapper = createObjectMapper();
+            writer.write(mapper.writeValueAsString(infoList));
             log.info("Wrote " + infoList.size() + " " + className.getSimpleName() + " to " + filename);
         } catch (Exception e){
             log.error("Error writing to file: " + filename, e);
         }
     }
 
-    public static <T> List<T> readFromFile(Class<T> className){
-        String filename = className.getSimpleName() + "_" + Main.guildId + ".txt";
+    public static <T> T readFromFile(String className, TypeReference<T> type){
+        String filename = className + "_" + Main.guildId + ".json";
 
-        List<T> infoList = new ArrayList<>();
-        try(FileInputStream fi = new FileInputStream("files/" + filename); ObjectInputStream oi = new ObjectInputStream(fi);){
-            T info;
-            while(true){
-                info = (T) oi.readObject();
-                if(info != null) infoList.add(info);
-            }
+        ObjectMapper mapper = createObjectMapper();
+        try{
+            String json = String.join("", Files.readAllLines(Path.of("files" + File.separator + filename)));
+            return mapper.readValue(json, type);
 
-        } catch (EOFException eof){
-            log.info("Read " + infoList.size() + " " + className.getSimpleName() + " from " + filename);
-        }
-        catch (Exception e){
+        } catch (Exception e) {
             log.error("Error reading from file: " + filename, e);
         }
 
-        return infoList;
+        return null;
+    }
+
+    public static ObjectMapper createObjectMapper(){
+        ObjectMapper mapper = new ObjectMapper();
+
+        mapper.registerModule(new JavaTimeModule());
+        mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+
+        return mapper;
     }
 
     public static String getFileName() {

@@ -1,5 +1,7 @@
 package org.example;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import java.io.Serializable;
 
 public class UserInfo implements Serializable {
@@ -22,6 +24,7 @@ public class UserInfo implements Serializable {
         this.recipeRole = recipeRole;
     }
 
+    @JsonIgnore
     public String getPingText(){
         return "<@" + id + ">";
     }

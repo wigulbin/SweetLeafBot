@@ -1,5 +1,6 @@
 package org.example;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.spec.EmbedCreateSpec;
 import discord4j.rest.util.Color;
@@ -9,6 +10,7 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class PartyInfo implements Serializable
@@ -30,6 +32,7 @@ public class PartyInfo implements Serializable
 
     private List<UserInfo> userList;
 
+    public PartyInfo(){}
     public PartyInfo(TypeInfo type, UserInfo hostInfo, long people, String server, boolean status, String commandGuid, String timestamp, Recipe recipe, long quantity)
     {
         this.type = type;
@@ -43,13 +46,13 @@ public class PartyInfo implements Serializable
         this.quantity = quantity;
         this.created = LocalDateTime.now();
 
-        this.userList = new ArrayList<>();
+        this.userList = Collections.synchronizedList(new ArrayList<>());
     }
 
     private static List<PartyInfo> infoList = new ArrayList<>();
     private static boolean changed = true;
 
-    public static void writeInfoList(){
+    public synchronized static void writeInfoList(){
         if(changed){
             Fileable.write(PartyInfo.class, PartyInfo.getInfoList());
             changed = false;
@@ -65,8 +68,12 @@ public class PartyInfo implements Serializable
         changed = true;
     }
 
-    public static List<PartyInfo> getInfoList(){
-        if(infoList.isEmpty()) infoList = Fileable.readFromFile(PartyInfo.class);
+    public synchronized static List<PartyInfo> getInfoList(){
+        if(infoList.isEmpty()) {
+            List<PartyInfo> result = Fileable.readFromFile(PartyInfo.class.getSimpleName(), new TypeReference<List<PartyInfo>>() {});
+            if(result != null) infoList.addAll(result);
+        }
+
 
         return new ArrayList<>(infoList);
     }
@@ -77,7 +84,7 @@ public class PartyInfo implements Serializable
 
     @Override
     public String toString() {
-        return server + " " + type + " created on " + created.format(DateTimeFormatter.ofPattern("dd/MM/yy hh:mm a")) + " by " + hostInfo.getName();
+        return type + " created on " + created.format(DateTimeFormatter.ofPattern("dd/MM/yy hh:mm a"));
     }
 
     public static PartyInfo createFromEvent(ChatInputInteractionEvent event, String modalGuid) {
@@ -335,5 +342,21 @@ public class PartyInfo implements Serializable
 
     public void setChannelid(long channelid) {
         this.channelid = channelid;
+    }
+
+    public long getQuantity() {
+        return quantity;
+    }
+
+    public void setQuantity(long quantity) {
+        this.quantity = quantity;
+    }
+
+    public LocalDateTime getCreated() {
+        return created;
+    }
+
+    public void setCreated(LocalDateTime created) {
+        this.created = created;
     }
 }

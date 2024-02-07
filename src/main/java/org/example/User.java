@@ -1,5 +1,7 @@
 package org.example;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+
 import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -11,7 +13,7 @@ public class User implements Serializable {
 
     private static List<User> infoList = new ArrayList<>();
     public static List<User> getUserList(){
-        if(infoList.isEmpty()) infoList = Fileable.readFromFile(User.class);
+        if(infoList.isEmpty()) infoList = Fileable.readFromFile(User.class.getSimpleName(), new TypeReference<List<User>>() {});
 
         return new ArrayList<>(infoList);
     }
