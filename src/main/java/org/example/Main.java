@@ -122,7 +122,7 @@ public class Main {
                 if (buttonEvent.getCustomId().startsWith(SIGN_UP_BUTTON_BASEID)) {
                     PartyInfo partyInfo = PartyInfo.getPartyInfoByGuid(buttonId.split(":")[1]);
 
-                    String buttonUserName = buttonEvent.getInteraction().getUser().getGlobalName().get();
+                    String buttonUserName = buttonEvent.getInteraction().getMember().get().getDisplayName();
                     String buttonUserid = buttonEvent.getInteraction().getUser().getId().asString();
 
                     if(buttonEvent.getInteraction().getMember().isPresent())
@@ -131,16 +131,18 @@ public class Main {
                     partyInfo.addUser(new UserInfo(buttonUserid, buttonUserName));
                     return buttonEvent.edit("")
                             .withEmbeds(partyInfo.createEmbed())
+                            .withComponents(partyInfo.createButtons().getActionRows())
                             .doOnError(e -> log.error("Button Error", e));
                 }
 
                 if (buttonEvent.getCustomId().startsWith(SIGN_UP_ROLE_BUTTON_BASEID)) {
                     PartyInfo partyInfo = PartyInfo.getPartyInfoByGuid(buttonId.split(":")[1]);
-                    String buttonUserName = buttonEvent.getInteraction().getUser().getGlobalName().get();
+                    String buttonUserName = buttonEvent.getInteraction().getMember().get().getDisplayName();
                     String buttonUserid = buttonEvent.getInteraction().getUser().getId().asString();
 
                     if(buttonEvent.getInteraction().getMember().isPresent())
                         buttonUserName = buttonEvent.getInteraction().getMember().get().getDisplayName();
+
 
                     String buttonValue = "";
                     if(buttonEvent.getCustomId().split(":").length > 2)
@@ -150,6 +152,7 @@ public class Main {
 
                     return buttonEvent.edit("")
                             .withEmbeds(partyInfo.createEmbed())
+                            .withComponents(partyInfo.createButtons().getActionRows())
                             .doOnError(e -> log.error("Button Error", e));
                 }
 
@@ -162,6 +165,7 @@ public class Main {
 
                     return buttonEvent.edit("")
                             .withEmbeds(partyInfo.createEmbed())
+                            .withComponents(partyInfo.createButtons().getActionRows())
                             .doOnError(e -> log.error("Button Error", e));
                 }
 
@@ -189,6 +193,7 @@ public class Main {
 
                     return buttonEvent.edit("")
                             .withEmbeds(partyInfo.createEmbed())
+                            .withComponents(partyInfo.createButtons().getActionRows())
                             .doOnError(e -> log.error("Button Error", e));
 
                 }
@@ -297,7 +302,8 @@ public class Main {
                                 partyInfo.removeUser(userId);
 
                                 return event.edit("")
-                                        .withEmbeds(partyInfo.createEmbed());
+                                        .withEmbeds(partyInfo.createEmbed())
+                                        .withComponents(partyInfo.createButtons().getActionRows());
                             }
                         }
                     }
@@ -345,7 +351,7 @@ public class Main {
                 String commandGuid = Common.createGUID();
                 PartyInfo partyInfo = PartyInfo.createFromEvent(event, commandGuid);
 
-                ButtonInfo buttonInfo = createButtons(partyInfo, commandGuid);
+                ButtonInfo buttonInfo = partyInfo.createButtons();
 
                 return event.reply()
                         .withEmbeds(partyInfo.createEmbed())
@@ -371,6 +377,8 @@ public class Main {
 
                 PartyInfo partyInfo = PartyInfo.getPartyInfoByGuid(guid);
                 partyInfo.setStatus(false);
+
+                PartyInfo.removeClosedParties();
                 return event.reply().withEphemeral(true).withContent("Closing " + partyInfo + "...")
                         .doFinally(s -> updateMessage(event, partyInfo));
             }
@@ -393,7 +401,7 @@ public class Main {
 
                             List<LayoutComponent> buttons = new ArrayList<>();
                             if(partyInfo.isStatus()){
-                                ButtonInfo buttonInfo = createButtons(partyInfo, partyInfo.getCommandGuid());
+                                ButtonInfo buttonInfo = partyInfo.createButtons();
                                 buttons.addAll(buttonInfo.getActionRows());
                             }
 
@@ -446,34 +454,6 @@ public class Main {
         return -1 * Integer.compare(FuzzySearch.ratio(name1, comparison), FuzzySearch.ratio(name2, comparison));
     }
 
-
-    private static ButtonInfo createButtons(PartyInfo partyInfo, String commandGuid) {
-        List<Button> buttons = new ArrayList<>();
-
-        String signUpButtonGUID     = "signup:" + commandGuid;
-        String signUpRoleButtonGUIDBase = "signupRole:" + commandGuid + ":";
-        String deleteButtonGUID     = "delete:" + commandGuid;
-
-        List<Button> roleButtons = new ArrayList<>();
-        if(partyInfo.getRecipe() != null) {
-            Recipe recipe = partyInfo.getRecipe();
-            int id = 0;
-            for (RecipeRole role : recipe.getRoles()) {
-                roleButtons.add(Button.primary(signUpRoleButtonGUIDBase + (id++), role.getRoleName()));
-            }
-        } else {
-            Button button = Button.primary(signUpButtonGUID, "Sign Up!");
-            buttons.add(button);
-        }
-
-        buttons.addAll(roleButtons);
-
-        Button deleteButton = Button.danger(deleteButtonGUID, "Remove Name");
-        buttons.add(deleteButton);
-
-        return new ButtonInfo(null, buttons);
-    }
-
     record ButtonInfo(Mono<Void> listener, List<Button> buttons){
         public List<LayoutComponent> getActionRows(){
             if(buttons.size() <= 5){
@@ -502,7 +482,8 @@ public class Main {
         options.add(ApplicationCommandOptionData.builder().name("timestamp").description("Timestamp").type(ApplicationCommandOption.Type.STRING.getValue()).autocomplete(false).required(false).build());
         options.add(ApplicationCommandOptionData.builder().name("recipe").description("Recipe").type(ApplicationCommandOption.Type.STRING.getValue()).autocomplete(true).required(false).build());
         options.add(ApplicationCommandOptionData.builder().name("quantity").description("Recipe Quantity").type(ApplicationCommandOption.Type.INTEGER.getValue()).autocomplete(false).required(false).build());
-        options.add(ApplicationCommandOptionData.builder().name("voice").description("Voice Party").type(ApplicationCommandOption.Type.STRING.getValue()).autocomplete(false).required(false).build());
+        options.add(ApplicationCommandOptionData.builder().name("voice").description("Voice Party").type(ApplicationCommandOption.Type.BOOLEAN.getValue()).autocomplete(false).required(false).build());
+        options.add(ApplicationCommandOptionData.builder().name("multiroles").description("Multiple people per role").type(ApplicationCommandOption.Type.BOOLEAN.getValue()).autocomplete(false).required(false).build());
 
         return options;
     }
