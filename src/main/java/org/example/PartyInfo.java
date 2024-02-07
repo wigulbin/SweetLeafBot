@@ -87,6 +87,10 @@ public class PartyInfo implements Serializable
         return type + " created on " + created.format(DateTimeFormatter.ofPattern("dd/MM/yy hh:mm a"));
     }
 
+    public String fullNameString() {
+        return type + " created on " + created.format(DateTimeFormatter.ofPattern("dd/MM/yy hh:mm a")) + " by " + hostInfo.getName();
+    }
+
     public static PartyInfo createFromEvent(ChatInputInteractionEvent event, String modalGuid) {
         String userName = event.getInteraction().getUser().getGlobalName().get();
         String userid = event.getInteraction().getUser().getId().asString();

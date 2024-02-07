@@ -155,30 +155,14 @@ public class Main {
 
                 if (buttonEvent.getCustomId().startsWith(DELETE_BUTTON_BASEID)) {
                     String guid = buttonId.split(":")[1];
-                    String modalGuid = Common.createGUID();
+
                     PartyInfo partyInfo = PartyInfo.getPartyInfoByGuid(guid);
                     String buttonUserid = buttonEvent.getInteraction().getUser().getId().asString();
-
-                    if (buttonUserid.equals(partyInfo.getHostInfo().getId())) {
-
-                        InteractionPresentModalSpec.Builder spec = InteractionPresentModalSpec.builder()
-                                .title("Remove User from event: ")
-                                .customId(REMOVE_MODAL_ID + "_" + SIGN_UP_BUTTON_BASEID + guid + "_" + modalGuid);
-
-                        int counter = 1;
-                        for (UserInfo userInfo : partyInfo.getUserList()) {
-                            spec.addComponent(ActionRow.of(TextInput.small(REMOVE_MODAL_ID + "_" + SIGN_UP_BUTTON_BASEID + guid + "_" + userInfo.getId() + "_" + counter, userInfo.getName(), "Removed").required(false).prefilled(userInfo.getName())));
-                        }
-
-                        return buttonEvent.presentModal(spec.build());
-                    } else {
-                        partyInfo.removeUser(buttonUserid);
-                    }
+                    partyInfo.removeUser(buttonUserid);
 
                     return buttonEvent.edit("")
                             .withEmbeds(partyInfo.createEmbed())
                             .doOnError(e -> log.error("Button Error", e));
-
                 }
 
                 if (buttonEvent.getCustomId().startsWith(CLOSE_PARTY_ID)) {
@@ -279,12 +263,16 @@ public class Main {
 
                 List<ApplicationCommandOptionChoiceData> suggestions = new ArrayList<>();
                 //Show all party infos
-//                if(member.getRoleIds().stream().anyMatch(MOD_ROLES::contains)){
-                    suggestions.addAll(partyInfos.stream().map(info -> ApplicationCommandOptionChoiceData.builder().name(info.toString()).value(info.getCommandGuid()).build()).toList());
-//                }
+                if(member.getRoleIds().stream().anyMatch(MOD_ROLES::contains)){
+                    suggestions.addAll(partyInfos.stream()
+                            .map(info -> ApplicationCommandOptionChoiceData.builder().name(info.fullNameString()).value(info.getCommandGuid()).build()).toList());
+                }
 
                 if(member.getRoleIds().stream().noneMatch(MOD_ROLES::contains)){
-
+                    suggestions.addAll(partyInfos.stream()
+                            .filter(info -> info.getHostInfo().getId().equals(member.getId().asString()))
+                            .map(info -> ApplicationCommandOptionChoiceData.builder().name(info.toString()).value(info.getCommandGuid()).build())
+                            .toList());
                 }
 
                 return event.respondWithSuggestions(suggestions);
