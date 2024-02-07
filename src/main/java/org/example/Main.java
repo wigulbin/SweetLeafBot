@@ -358,6 +358,8 @@ public class Main {
                         .withComponents(buttonInfo.getActionRows());
             }
 
+            //TODO ADD RIGHTS TO THESE COMMANDS ONLY PARTY OWNERS/ADMINS SHOULD BE ABLE TO REMOVE/CLOSE PARTIES
+
             if(CHAT_INPUT_REMOVE_COMMAND_NAME.equalsIgnoreCase(event.getCommandName())) {
                 String guid = event.getOption("partyid").get().getValue().get().asString();
                 PartyInfo partyInfo = PartyInfo.getPartyInfoByGuid(guid);
