@@ -9,27 +9,22 @@ import discord4j.core.object.Embed;
 import discord4j.core.object.command.ApplicationCommandInteractionOptionValue;
 import discord4j.core.object.command.ApplicationCommandOption;
 import discord4j.core.object.component.*;
-import discord4j.core.object.entity.Guild;
 import discord4j.core.object.entity.Member;
 import discord4j.core.object.entity.Message;
 import discord4j.core.object.entity.User;
 import discord4j.core.object.entity.channel.Channel;
-import discord4j.core.object.entity.channel.MessageChannel;
 import discord4j.core.object.entity.channel.TextChannel;
 import discord4j.core.spec.EmbedCreateSpec;
 import discord4j.core.spec.InteractionPresentModalSpec;
-import discord4j.core.spec.InteractionReplyEditMono;
 import discord4j.core.spec.MessageEditSpec;
 import discord4j.discordjson.json.ApplicationCommandOptionChoiceData;
 import discord4j.discordjson.json.ApplicationCommandOptionData;
 import discord4j.discordjson.json.ApplicationCommandRequest;
-import discord4j.discordjson.json.UserData;
 import discord4j.rest.interaction.GuildCommandRegistrar;
 import me.xdrop.fuzzywuzzy.FuzzySearch;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Mono;
 
-import java.time.Duration;
 import java.util.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -55,7 +50,7 @@ public class Main {
     static final String REMOVE_USER_SELECT = "removeUserSelect:";
     static final String REMOVE_USER_BUTTON = "removeUserButton:";
 
-    static final Set<Snowflake> MOD_ROLES = Set.of(Snowflake.of("1156959674655047783"), Snowflake.of("1152059333916512297"));
+    static final Set<Snowflake> MOD_ROLES = Set.of(Snowflake.of("1156959674655047783"), Snowflake.of("1152059333916512297"), Snowflake.of("937747921405894677"));
     public static final String BOT_NAME = "Silly Lil Bot";
 
     public static void main( String[] args )
@@ -268,12 +263,12 @@ public class Main {
 
                 List<ApplicationCommandOptionChoiceData> suggestions = new ArrayList<>();
                 //Show all party infos
-                if(member.getRoleIds().stream().anyMatch(MOD_ROLES::contains)){
+                if(isMod(member)){
                     suggestions.addAll(partyInfos.stream()
                             .map(info -> ApplicationCommandOptionChoiceData.builder().name(info.fullNameString()).value(info.getCommandGuid()).build()).toList());
                 }
 
-                if(member.getRoleIds().stream().noneMatch(MOD_ROLES::contains)){
+                if(!isMod(member)){
                     suggestions.addAll(partyInfos.stream()
                             .filter(info -> info.getHostInfo().getId().equals(member.getId().asString()))
                             .map(info -> ApplicationCommandOptionChoiceData.builder().name(info.toString()).value(info.getCommandGuid()).build())
@@ -363,26 +358,43 @@ public class Main {
             if(CHAT_INPUT_REMOVE_COMMAND_NAME.equalsIgnoreCase(event.getCommandName())) {
                 String guid = event.getOption("partyid").get().getValue().get().asString();
                 PartyInfo partyInfo = PartyInfo.getPartyInfoByGuid(guid);
+                if(partyInfo == null)
+                    return event.reply("Invalid party selected").withEphemeral(true);
 
-                if(partyInfo.getUserList().isEmpty())
-                    return event.reply("There are no users to remove").withEphemeral(true);
+                Member member = event.getInteraction().getMember().get();
 
-                SelectMenu selectMenu = SelectMenu.of(REMOVE_USER_SELECT + guid, partyInfo.getUserList().stream().map(user -> SelectMenu.Option.of(user.getName(), user.getId())).toList());
+                //Is user the host
+                if(partyInfo.isHost(member) || isMod(member)){
+                    if(partyInfo.getUserList().isEmpty())
+                        return event.reply("There are no users to remove").withEphemeral(true);
 
-                return event.reply("Select a user to remove:")
-                        .withComponents(ActionRow.of(selectMenu))
-                        .withEphemeral(true);
+                    SelectMenu selectMenu = SelectMenu.of(REMOVE_USER_SELECT + guid, partyInfo.getUserList().stream().map(user -> SelectMenu.Option.of(user.getName(), user.getId())).toList());
+
+                    return event.reply("Select a user to remove:")
+                            .withComponents(ActionRow.of(selectMenu))
+                            .withEphemeral(true);
+                }
+
+                return event.reply("You do not have access to modify this party").withEphemeral(true);
             }
 
             if(CHAT_INPUT_CLOSE_COMMAND_NAME.equalsIgnoreCase(event.getCommandName())) {
                 String guid = event.getOption("partyid").get().getValue().get().asString();
 
                 PartyInfo partyInfo = PartyInfo.getPartyInfoByGuid(guid);
-                partyInfo.setStatus(false);
+                Member member = event.getInteraction().getMember().get();
+                if(partyInfo == null)
+                    return event.reply("Invalid party selected").withEphemeral(true);
 
-                PartyInfo.removeClosedParties();
-                return event.reply().withEphemeral(true).withContent("Closing " + partyInfo + "...")
-                        .doFinally(s -> updateMessage(event, partyInfo));
+                //Is user the host
+                if(partyInfo.isHost(member) || isMod(member)){
+                    partyInfo.setStatus(false);
+
+                    PartyInfo.removeClosedParties();
+                    return event.reply().withEphemeral(true).withContent("Closing " + partyInfo + "...")
+                            .doFinally(s -> updateMessage(event, partyInfo));
+                }
+                return event.reply("You do not have access to modify this party").withEphemeral(true);
             }
             return Mono.empty();
         });
@@ -509,7 +521,11 @@ public class Main {
     }
 
 
-
+    private static boolean isMod(Member member){
+        log.info(member.getRoleIds().toString());
+        log.info(MOD_ROLES.toString());
+        return member.getRoleIds().stream().anyMatch(MOD_ROLES::contains);
+    }
 
     private static Mono<Void> createPingCommand(GatewayDiscordClient gateway) {
         return gateway.on(MessageCreateEvent.class, event -> {

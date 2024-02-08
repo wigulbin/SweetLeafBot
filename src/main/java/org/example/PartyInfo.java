@@ -3,6 +3,7 @@ package org.example;
 import com.fasterxml.jackson.core.type.TypeReference;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.object.component.Button;
+import discord4j.core.object.entity.Member;
 import discord4j.core.spec.EmbedCreateSpec;
 import discord4j.rest.util.Color;
 import org.slf4j.Logger;
@@ -95,6 +96,12 @@ public class PartyInfo implements Serializable
         infoList.removeIf(info -> !info.isStatus());
         changed.set(true);
         writeInfoList();
+    }
+
+    public boolean isHost(Member member){
+        if(member == null) return false;
+
+        return member.getId().asString().equals(getHostInfo().getId());
     }
 
     @Override
