@@ -30,12 +30,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class Main {
+    public static final Snowflake SPROUT_ROLE_ID = Snowflake.of("1205616550132981771");
+    public static final Snowflake WILD_GARLIC_ROLE_ID = Snowflake.of("1152033973762011166");
     private static final Logger log = LoggerFactory.getLogger(Main.class);
 
 
     private static final String token = System.getenv("token");
     public static final long guildId = Long.parseLong(System.getenv("guild_id"));
-//    private static final long guildId = Long.parseLong("1151985071272763452");
 
     static final String CHAT_INPUT_COMMAND_NAME = "party";
     static final String CHAT_INPUT_REMOVE_COMMAND_NAME = "removeuser";
@@ -52,6 +53,7 @@ public class Main {
 
     static final Set<Snowflake> MOD_ROLES = Set.of(Snowflake.of("1156959674655047783"), Snowflake.of("1152059333916512297"), Snowflake.of("937747921405894677"));
     public static final String BOT_NAME = "Silly Lil Bot";
+    public static final String INTRO_CHANNEL_ID = "1152046915731603487";
 
     public static void main( String[] args )
     {
@@ -332,6 +334,12 @@ public class Main {
                 }
             }
 
+            if(message.getChannelId().asString().equals(INTRO_CHANNEL_ID)) {
+                return message.getAuthorAsMember()
+                        .filter(m -> m.getRoleIds().contains(SPROUT_ROLE_ID))
+                        .flatMap(m -> m.removeRole(SPROUT_ROLE_ID)
+                                .then(Mono.defer(() -> m.addRole(WILD_GARLIC_ROLE_ID))));
+            }
 
 
             return Mono.empty();
