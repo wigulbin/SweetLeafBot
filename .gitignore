@@ -46,3 +46,4 @@ logs
 /dependency-reduced-pom.xml
 .env
 .idea/workspace.xml
+remoteLogs/*

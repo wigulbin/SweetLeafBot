@@ -1,0 +1,1 @@
+gcloud compute scp sweet-leaf-bot:/home/wigulbin/logs/* ./remoteLogs --recurse --zone us-central1-c
