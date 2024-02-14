@@ -16,7 +16,7 @@ import java.util.List;
 public class Fileable implements Serializable {
     private static final Logger log = LoggerFactory.getLogger(Fileable.class);
 
-    public static <T> void write(Class<T> className, List<T> infoList){
+    public synchronized static <T> void write(Class<T> className, List<T> infoList){
         String filename = className.getSimpleName() + "_" + Main.guildId + ".json";
 
         try(BufferedWriter writer = new BufferedWriter(new FileWriter("files" + File.separator + filename))){
@@ -28,7 +28,7 @@ public class Fileable implements Serializable {
         }
     }
 
-    public static <T> T readFromFile(String className, TypeReference<T> type){
+    public synchronized static <T> T readFromFile(String className, TypeReference<T> type){
         String filename = className + "_" + Main.guildId + ".json";
 
         ObjectMapper mapper = createObjectMapper();

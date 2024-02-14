@@ -26,6 +26,8 @@ import org.reactivestreams.Publisher;
 import reactor.core.publisher.Mono;
 
 import java.util.*;
+import java.util.stream.Collectors;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,22 +40,26 @@ public class Main {
     private static final String token = System.getenv("token");
     public static final long guildId = Long.parseLong(System.getenv("guild_id"));
 
-    static final String CHAT_INPUT_COMMAND_NAME = "party";
-    static final String CHAT_INPUT_REMOVE_COMMAND_NAME = "removeuser";
-    static final String CHAT_INPUT_CLOSE_COMMAND_NAME = "closeparty";
-    static final String REMOVE_MODAL_ID = "removeModal";
-    static final String CLOSE_PARTY_ID = "closeParty:";
+    static final String CHAT_INPUT_COMMAND_NAME         = "party";
+    static final String CHAT_INPUT_REMOVE_COMMAND_NAME  = "removeuser";
+    static final String CHAT_INPUT_CLOSE_COMMAND_NAME   = "closeparty";
+    static final String REMOVE_MODAL_ID                 = "removeModal";
+    static final String CLOSE_PARTY_ID                  = "closeParty:";
 
-    static final String SIGN_UP_BUTTON_BASEID = "signup:";
-    static final String SIGN_UP_ROLE_BUTTON_BASEID = "signupRole:";
-    static final String DELETE_BUTTON_BASEID = "delete:";
+    static final String SIGN_UP_BUTTON_BASEID           = "signup:";
+    static final String SIGN_UP_ROLE_BUTTON_BASEID      = "signupRole:";
+    static final String DELETE_BUTTON_BASEID            = "delete:";
 
-    static final String REMOVE_USER_SELECT = "removeUserSelect:";
-    static final String REMOVE_USER_BUTTON = "removeUserButton:";
+    static final String REMOVE_USER_SELECT              = "removeUserSelect:";
+    static final String REMOVE_USER_BUTTON              = "removeUserButton:";
 
-    static final Set<Snowflake> MOD_ROLES = Set.of(Snowflake.of("1156959674655047783"), Snowflake.of("1152059333916512297"), Snowflake.of("937747921405894677"));
-    public static final String BOT_NAME = "Silly Lil Bot";
+    static final Set<Snowflake> MOD_ROLES = Set.of(Snowflake.of("1156959674655047783"), Snowflake.of("1152059333916512297"));
     public static final String INTRO_CHANNEL_ID = "1152046915731603487";
+
+    //TODO
+    // New command to mention @everyone in a party /mention
+    // When closing party, make an @everyone "The party is starting @user1 @user2 @etc...
+
 
     public static void main( String[] args )
     {
@@ -118,12 +124,8 @@ public class Main {
 
                 if (buttonEvent.getCustomId().startsWith(SIGN_UP_BUTTON_BASEID)) {
                     PartyInfo partyInfo = PartyInfo.getPartyInfoByGuid(buttonId.split(":")[1]);
-
-                    String buttonUserName = buttonEvent.getInteraction().getMember().get().getDisplayName();
                     String buttonUserid = buttonEvent.getInteraction().getUser().getId().asString();
-
-                    if(buttonEvent.getInteraction().getMember().isPresent())
-                        buttonUserName = buttonEvent.getInteraction().getMember().get().getDisplayName();
+                    String buttonUserName = buttonEvent.getInteraction().getMember().get().getDisplayName();
 
                     partyInfo.addUser(new UserInfo(buttonUserid, buttonUserName));
                     return buttonEvent.edit("")
@@ -134,12 +136,8 @@ public class Main {
 
                 if (buttonEvent.getCustomId().startsWith(SIGN_UP_ROLE_BUTTON_BASEID)) {
                     PartyInfo partyInfo = PartyInfo.getPartyInfoByGuid(buttonId.split(":")[1]);
-                    String buttonUserName = buttonEvent.getInteraction().getMember().get().getDisplayName();
                     String buttonUserid = buttonEvent.getInteraction().getUser().getId().asString();
-
-                    if(buttonEvent.getInteraction().getMember().isPresent())
-                        buttonUserName = buttonEvent.getInteraction().getMember().get().getDisplayName();
-
+                    String buttonUserName = buttonEvent.getInteraction().getMember().get().getDisplayName();
 
                     String buttonValue = "";
                     if(buttonEvent.getCustomId().split(":").length > 2)
@@ -241,6 +239,7 @@ public class Main {
                     suggestions.add(ApplicationCommandOptionChoiceData.builder().name("NA").value("NA").build());
                     suggestions.add(ApplicationCommandOptionChoiceData.builder().name("EU").value("EU").build());
                     suggestions.add(ApplicationCommandOptionChoiceData.builder().name("PA").value("PA").build());
+                    suggestions.add(ApplicationCommandOptionChoiceData.builder().name("Any").value("").build());
                 }
 
                 if(event.getFocusedOption().getName().equals("recipe"))
@@ -320,7 +319,7 @@ public class Main {
             System.out.println(message.getContent());
 
 
-            if(message.getAuthor().get().getUsername().equals(BOT_NAME)){
+            if(message.getAuthor().get().isBot()){
                 Embed embed = message.getEmbeds().stream().findFirst().orElse(null);
                 if(embed != null && embed.getFooter().isPresent()){
                     String id = embed.getFooter().get().getText();
@@ -376,7 +375,7 @@ public class Main {
                     if(partyInfo.getUserList().isEmpty())
                         return event.reply("There are no users to remove").withEphemeral(true);
 
-                    SelectMenu selectMenu = SelectMenu.of(REMOVE_USER_SELECT + guid, partyInfo.getUserList().stream().map(user -> SelectMenu.Option.of(user.getName(), user.getId())).toList());
+                    SelectMenu selectMenu = SelectMenu.of(REMOVE_USER_SELECT + guid, partyInfo.getUserList().stream().distinct().map(user -> SelectMenu.Option.of(user.getName(), user.getId())).toList());
 
                     return event.reply("Select a user to remove:")
                             .withComponents(ActionRow.of(selectMenu))
@@ -399,7 +398,10 @@ public class Main {
                     partyInfo.setStatus(false);
 
                     PartyInfo.removeClosedParties();
-                    return event.reply().withEphemeral(true).withContent("Closing " + partyInfo + "...")
+
+                    String hostName = partyInfo.getHostInfo().getName() + "'s " + partyInfo.getPartyNameForEmbed() + " party is starting! <:OrangeCatHype:1162198496372334653> \r\n";
+                    String userPings = partyInfo.getUserList().stream().distinct().map(UserInfo::getPingText).collect(Collectors.joining(" "));
+                    return event.reply().withContent(hostName + userPings)
                             .doFinally(s -> updateMessage(event, partyInfo));
                 }
                 return event.reply("You do not have access to modify this party").withEphemeral(true);
@@ -504,8 +506,7 @@ public class Main {
         options.add(ApplicationCommandOptionData.builder().name("timestamp").description("Timestamp").type(ApplicationCommandOption.Type.STRING.getValue()).autocomplete(false).required(false).build());
         options.add(ApplicationCommandOptionData.builder().name("recipe").description("Recipe").type(ApplicationCommandOption.Type.STRING.getValue()).autocomplete(true).required(false).build());
         options.add(ApplicationCommandOptionData.builder().name("quantity").description("Recipe Quantity").type(ApplicationCommandOption.Type.INTEGER.getValue()).autocomplete(false).required(false).build());
-        options.add(ApplicationCommandOptionData.builder().name("voice").description("Voice Party").type(ApplicationCommandOption.Type.BOOLEAN.getValue()).autocomplete(false).required(false).build());
-        options.add(ApplicationCommandOptionData.builder().name("multiroles").description("Multiple people per role").type(ApplicationCommandOption.Type.BOOLEAN.getValue()).autocomplete(false).required(false).build());
+        options.add(ApplicationCommandOptionData.builder().name("voice").description("Voice Chat Required").type(ApplicationCommandOption.Type.BOOLEAN.getValue()).autocomplete(false).required(false).build());
 
         return options;
     }
@@ -514,8 +515,6 @@ public class Main {
         List<ApplicationCommandOptionData> options = new ArrayList<>();
 
         options.add(ApplicationCommandOptionData.builder().name("partyid").description("Party").type(ApplicationCommandOption.Type.STRING.getValue()).autocomplete(true).required(true).build());
-
-//        options.add(ApplicationCommandOptionData.builder().name("user").description("user").type(ApplicationCommandOption.Type.STRING.getValue()).autocomplete(true).required(true).build());
 
         return options;
     }

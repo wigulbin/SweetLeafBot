@@ -3,6 +3,7 @@ package org.example;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import java.io.Serializable;
+import java.util.Objects;
 
 public class UserInfo implements Serializable {
     private String id = "";
@@ -22,6 +23,19 @@ public class UserInfo implements Serializable {
         this.id = id;
         this.name = name;
         this.recipeRole = recipeRole;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        UserInfo userInfo = (UserInfo) o;
+        return Objects.equals(id, userInfo.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id);
     }
 
     @JsonIgnore

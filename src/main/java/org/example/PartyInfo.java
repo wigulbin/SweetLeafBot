@@ -1,5 +1,7 @@
 package org.example;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.core.type.TypeReference;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.object.component.Button;
@@ -17,7 +19,9 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 
+@JsonIgnoreProperties
 public class PartyInfo implements Serializable
 {
     private TypeInfo type;
@@ -32,7 +36,6 @@ public class PartyInfo implements Serializable
     private long messageid;
     private long channelid;
     private boolean voice;
-    private boolean multiRoles;
 
     private Recipe recipe;
 
@@ -41,7 +44,7 @@ public class PartyInfo implements Serializable
 
     private static final Logger log = LoggerFactory.getLogger(PartyInfo.class);
     public PartyInfo(){}
-    public PartyInfo(TypeInfo type, UserInfo hostInfo, long people, String server, boolean status, String commandGuid, String timestamp, Recipe recipe, long quantity, boolean voice, boolean multiRoles)
+    public PartyInfo(TypeInfo type, UserInfo hostInfo, long people, String server, boolean status, String commandGuid, String timestamp, Recipe recipe, long quantity, boolean voice)
     {
         this.type = type;
         this.hostInfo = hostInfo;
@@ -54,7 +57,6 @@ public class PartyInfo implements Serializable
         this.quantity = quantity;
         this.created = LocalDateTime.now();
         this.voice = voice;
-        this.multiRoles = multiRoles;
 
         this.userList = Collections.synchronizedList(new ArrayList<>());
     }
@@ -62,9 +64,9 @@ public class PartyInfo implements Serializable
     private static List<PartyInfo> infoList = new ArrayList<>();
     private static AtomicBoolean changed = new AtomicBoolean(true);
 
-    public synchronized static void writeInfoList(){
+    public static void writeInfoList(){
         if(changed.get()){
-            Fileable.write(PartyInfo.class, PartyInfo.getInfoList());
+            new Thread(() -> Fileable.write(PartyInfo.class, PartyInfo.getInfoList())).start();
             changed.set(false);
         }
     }
@@ -78,12 +80,11 @@ public class PartyInfo implements Serializable
         changed.set(true);
     }
 
-    public synchronized static List<PartyInfo> getInfoList(){
+    public  static List<PartyInfo> getInfoList(){
         if(infoList.isEmpty()) {
             List<PartyInfo> result = Fileable.readFromFile(PartyInfo.class.getSimpleName(), new TypeReference<List<PartyInfo>>() {});
             if(result != null) infoList.addAll(result);
         }
-
 
         return new ArrayList<>(infoList);
     }
@@ -134,9 +135,8 @@ public class PartyInfo implements Serializable
         UserInfo userInfo = new UserInfo(userid, userName, "");
         Recipe recipe = getRecipe(event);
         boolean voice = event.getOption("voice").isPresent() && event.getOption("voice").get().getValue().get().asBoolean();
-        boolean multiRole = event.getOption("multiroles").isPresent() && event.getOption("multiroles").get().getValue().get().asBoolean();
 
-        PartyInfo info = new PartyInfo(type, userInfo, finalPeople, server, true, modalGuid, timestamp, recipe, quantity, voice, multiRole);
+        PartyInfo info = new PartyInfo(type, userInfo, finalPeople, server, true, modalGuid, timestamp, recipe, quantity, voice);
         addToInfoList(info);
         return info;
     }
@@ -182,8 +182,9 @@ public class PartyInfo implements Serializable
     }
 
     public synchronized void addUser(UserInfo userInfo){
-        if(!userInfo.getId().equals(hostInfo.getId())) { //Hosts cannot signup for own party
-            if(multiRoles || !hasRole(userInfo.getRecipeRole())) { //If party is set to someone can only signup once
+        boolean isCooking = this.getType().getName().equals("Cooking");
+        if(!userInfo.getId().equals(hostInfo.getId()) || isCooking) { // Hosts cannot signup for own party, unless it's a cooking party
+            if(isCooking || !hasRole(userInfo.getRecipeRole())) {     // Cooking can have the same person sign up multiple times, others cannot
                 userList.add(userInfo);
                 updateInfoList();
             }
@@ -215,8 +216,7 @@ public class PartyInfo implements Serializable
             Recipe recipe = partyInfo.getRecipe();
             int id = 0;
             for (RecipeRole role : recipe.getRoles()) {
-                if(multiRoles || !this.hasRole(id + ""))
-                    roleButtons.add(Button.primary(signUpRoleButtonGUIDBase + (id), role.getRoleName()));
+                roleButtons.add(Button.primary(signUpRoleButtonGUIDBase + (id), role.getRoleName()));
 
                 id++;
             }
@@ -238,12 +238,11 @@ public class PartyInfo implements Serializable
         PartyInfo partyInfo = this;
         String status = getStatus(partyInfo);
 
-        String partyName = partyInfo.getType().toString();
-        if(partyInfo.getRecipe() != null) partyName = partyInfo.quantity + "x " + partyInfo.getRecipe().getRecipeName();
+        String partyName = getPartyNameForEmbed();
 
         String description = partyInfo.getHostInfo().getPingText() + " is hosting a " + partyName + " party " + partyInfo.getTimestamp();
         if(partyInfo.isVoice())
-                description += "\r\n:microphone2: Microphone required";
+            description += "\r\n:microphone2: Join VC/Muted";
 
         EmbedCreateSpec.Builder embed = EmbedCreateSpec.builder()
                 .color(partyInfo.getColor())
@@ -263,17 +262,28 @@ public class PartyInfo implements Serializable
         return embed.build();
     }
 
+    @JsonIgnore
+    public String getPartyNameForEmbed() {
+        String partyName = this.getType().toString();
+        if(this.getRecipe() != null) partyName = this.quantity + "x " + this.getRecipe().getRecipeName();
+        return partyName;
+    }
+
     private static EmbedCreateSpec.Builder addUsersToEmbed(PartyInfo partyInfo, EmbedCreateSpec.Builder embed) {
         if(partyInfo.recipe == null) {
             int personCount = 0;
+
+            List<String> fieldUsers = new ArrayList<>();
             for (UserInfo userInfo : partyInfo.getUserList())
             {
-                embed = embed.addField("", "- " + userInfo.getPingText(), false);
+                fieldUsers.add(userInfo.getPingText());
                 personCount++;
             }
 
             for(int i = personCount; i < partyInfo.getPeople(); i++)
-                embed = embed.addField("", "- Open", false);
+                fieldUsers.add("Open");
+
+            embed = embed.addField("", fieldUsers.stream().map(u -> "- " + u).collect(Collectors.joining("\r\n")), false);
         }
 //<:AdorableFrog:937754121795174420>
         if(partyInfo.recipe != null) {
@@ -283,18 +293,22 @@ public class PartyInfo implements Serializable
                 embed = embed.addField(role.getRoleName() + " - " + role.getStation(), role.getBringDisplayString(partyInfo.quantity), false);
 
                 int personCount = 0;
+                List<String> fieldUsers = new ArrayList<>();
                 for (UserInfo userInfo : partyInfo.getUserList())
                 {
                     if(userInfo.getRecipeRole().equals(roleCounter + "")){
                         personCount++;
-                        embed.addField("", personCount + ": " + userInfo.getPingText(), false);
+                        fieldUsers.add(personCount + ". " + userInfo.getPingText());
                     }
                 }
 
                 if(personCount == 0)
-                    embed = embed.addField("", "1: ", false);
+                    embed = embed.addField("", "1. \r\n", false);
 
-                embed = embed.addField("", " ", false);
+                if(personCount > 0){
+                    embed = embed.addField("", String.join("\r\n", fieldUsers) + "\r\n", false);
+                }
+
                 roleCounter++;
             }
         }
