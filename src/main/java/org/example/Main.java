@@ -251,6 +251,12 @@ public class Main {
                             .forEach(suggestions::add);
                 }
 
+//                if(event.getFocusedOption().getName().equals("voice"))
+//                {
+//                    suggestions.add(ApplicationCommandOptionChoiceData.builder().name("Voice Chat/Muted Required").value(true).build());
+//                    suggestions.add(ApplicationCommandOptionChoiceData.builder().name("No Voice Chat Required").value(false).build());
+//                }
+
 
                 // Finally, return the list of choices to the user
                 return event.respondWithSuggestions(suggestions);
@@ -315,10 +321,6 @@ public class Main {
     private static Publisher<?> getOnMessage(GatewayDiscordClient client) {
         Publisher<?> onModal = client.on(MessageCreateEvent.class, event -> {
             Message message = event.getMessage();
-            System.out.println(message.getAuthor().get().getUsername());
-            System.out.println(message.getContent());
-
-
             if(message.getAuthor().get().isBot()){
                 Embed embed = message.getEmbeds().stream().findFirst().orElse(null);
                 if(embed != null && embed.getFooter().isPresent()){
@@ -500,13 +502,16 @@ public class Main {
     private static List<ApplicationCommandOptionData> getPartyCommandOptionData() {
         List<ApplicationCommandOptionData> options = new ArrayList<>();
 
+        List<ApplicationCommandOptionChoiceData> voiceOptions = List.of(ApplicationCommandOptionChoiceData.builder().name("Voice Chat/Muted Required").value(true).build()
+                , ApplicationCommandOptionChoiceData.builder().name("No Voice Chat Required").value(false).build());
+
         options.add(ApplicationCommandOptionData.builder().name("type").description("type").type(ApplicationCommandOption.Type.STRING.getValue()).autocomplete(true).required(true).build());
         options.add(ApplicationCommandOptionData.builder().name("server").description("server").type(ApplicationCommandOption.Type.STRING.getValue()).autocomplete(true).required(true).build());
         options.add(ApplicationCommandOptionData.builder().name("people").description("# of People").type(ApplicationCommandOption.Type.INTEGER.getValue()).autocomplete(false).required(false).build());
         options.add(ApplicationCommandOptionData.builder().name("timestamp").description("Timestamp").type(ApplicationCommandOption.Type.STRING.getValue()).autocomplete(false).required(false).build());
         options.add(ApplicationCommandOptionData.builder().name("recipe").description("Recipe").type(ApplicationCommandOption.Type.STRING.getValue()).autocomplete(true).required(false).build());
         options.add(ApplicationCommandOptionData.builder().name("quantity").description("Recipe Quantity").type(ApplicationCommandOption.Type.INTEGER.getValue()).autocomplete(false).required(false).build());
-        options.add(ApplicationCommandOptionData.builder().name("voice").description("Voice Chat Required").type(ApplicationCommandOption.Type.BOOLEAN.getValue()).autocomplete(false).required(false).build());
+        options.add(ApplicationCommandOptionData.builder().name("voice").description("Voice Chat Options").type(ApplicationCommandOption.Type.BOOLEAN.getValue()).autocomplete(false).choices(voiceOptions).required(false).build());
 
         return options;
     }
