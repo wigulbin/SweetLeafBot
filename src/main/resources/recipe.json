@@ -207,6 +207,117 @@
       ]
     },
     {
+      "recipeName": "Advanced Condensed Apple Celebration Cake",
+      "emoji": ":_PaliaCake:1187166280806051920",
+      "roles": [
+        {
+          "roleName": "Starter",
+          "station": "Prep Station",
+          "emoji": ":_PaliaPrepStation:1201193977496486019",
+          "brings": [
+            {
+              "itemName": "Blueberries",
+              "quantity": 1,
+              "lock": "",
+              "emoji": ":_PaliaBloob:1194866305065554000",
+              "mustBeStar": true
+            },
+            {
+              "itemName": "Recipe",
+              "quantity": 1,
+              "lock": "",
+              "emoji": ":_PaliaRecipe:1201195151767388260",
+              "mustBeStar": false
+            }
+          ]
+        },
+        {
+          "roleName": "Batter & Baker",
+          "station": "Mixing Station & Oven",
+          "emoji": ":_PaliaMixingStation:1201193976259166228",
+          "brings": [
+            {
+              "itemName": "Sweet Leaf",
+              "quantity": 1,
+              "lock": "",
+              "emoji": ":_PaliaSweetleaf:1162137938839216168",
+              "mustBeStar": false
+            },
+            {
+              "itemName": "Flour",
+              "quantity": 1,
+              "lock": "",
+              "emoji": ":_PaliaFlour:1187166985927282781",
+              "mustBeStar": false
+            },
+            {
+              "itemName": "Egg",
+              "quantity": 1,
+              "lock": "",
+              "emoji": ":_PaliaEgg:1187811912558321704",
+              "mustBeStar": false
+            },
+            {
+              "itemName": "Butter",
+              "quantity": 1,
+              "lock": "",
+              "emoji": ":_PaliaButter:1187164360418795521",
+              "mustBeStar": false
+            }
+          ]
+        },
+        {
+          "roleName": "Regular Frost",
+          "station": "Mixing Station",
+          "emoji": ":_PaliaMixingStation:1201193976259166228",
+          "brings": [
+            {
+              "itemName": "Sweet Leaf",
+              "quantity": 1,
+              "lock": "",
+              "emoji": ":_PaliaSweetleaf:1162137938839216168",
+              "mustBeStar": false
+            },
+            {
+              "itemName": "Milk",
+              "quantity": 1,
+              "lock": "",
+              "emoji": ":_PaliaMilk:1187167346675159101",
+              "mustBeStar": false
+            },
+            {
+              "itemName": "Butter",
+              "quantity": 1,
+              "lock": "",
+              "emoji": ":_PaliaButter:1187164360418795521",
+              "mustBeStar": false
+            }
+          ]
+        },
+        {
+          "roleName": "Fruit Frost & Spread",
+          "station": "Mixing Station",
+          "emoji": ":_PaliaMixingStation:1201193976259166228",
+          "brings": [
+            {
+              "itemName": "Apples",
+              "quantity": 1,
+              "lock": "",
+              "emoji": ":_PaliaApple:1187183683019489310",
+              "mustBeStar": true
+            },
+            {
+              "itemName": "Sugar",
+              "quantity": 1,
+              "lock": "",
+              "emoji": ":_PaliaSugar:1201348979200380928",
+              "mustBeStar": false
+            }
+          ]
+        }
+      ]
+    },
+    {
       "recipeName": "Chili Oil Dumplings",
       "emoji": ":dumpling:",
       "roles": [
