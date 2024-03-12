@@ -14,14 +14,16 @@
               "quantity": 1,
               "lock": "",
               "emoji": ":_PaliaButter:1187164360418795521",
-              "mustBeStar": false
+              "mustBeStar": false,
+              "overprep": false
             },
             {
               "itemName": "Recipe",
               "quantity": 1,
               "lock": "",
               "emoji": ":_PaliaRecipe:1201195151767388260",
-              "mustBeStar": false
+              "mustBeStar": false,
+              "overprep": false
             }
           ]
         },
@@ -35,7 +37,8 @@
               "quantity": 1,
               "lock": "Spice Sprouts, Apples",
               "emoji": ":_PaliaWheat:1182203482791493662",
-              "mustBeStar": true
+              "mustBeStar": true,
+              "overprep": true
             }
           ]
         },
@@ -49,7 +52,8 @@
               "quantity": 3,
               "lock": "Spice Sprouts, Wheat, Sweet Leaf",
               "emoji": ":_PaliaApple:1187183683019489310",
-              "mustBeStar": true
+              "mustBeStar": true,
+              "overprep": false
             }
           ]
         },
@@ -63,7 +67,8 @@
               "quantity": 1,
               "lock": "",
               "emoji": ":_PaliaSweetleaf:1162137938839216168",
-              "mustBeStar": false
+              "mustBeStar": false,
+              "overprep": true
             }
           ]
         },
@@ -77,7 +82,8 @@
               "quantity": 1,
               "lock": "Apples, Wheat",
               "emoji": ":_PaliaSpiceSprouts:1182028648681844767",
-              "mustBeStar": false
+              "mustBeStar": false,
+              "overprep": true
             }
           ]
         }
@@ -97,14 +103,16 @@
               "quantity": 1,
               "lock": "",
               "emoji": ":_PaliaBloob:1194866305065554000",
-              "mustBeStar": true
+              "mustBeStar": true,
+              "overprep": false
             },
             {
               "itemName": "Recipe",
               "quantity": 1,
               "lock": "",
               "emoji": ":_PaliaRecipe:1201195151767388260",
-              "mustBeStar": false
+              "mustBeStar": false,
+              "overprep": false
             }
           ]
         },
@@ -118,7 +126,8 @@
               "quantity": 1,
               "lock": "",
               "emoji": ":_PaliaSweetleaf:1162137938839216168",
-              "mustBeStar": false
+              "mustBeStar": false,
+              "overprep": true
             }
           ]
         },
@@ -132,21 +141,24 @@
               "quantity": 1,
               "lock": "",
               "emoji": ":_PaliaFlour:1187166985927282781",
-              "mustBeStar": false
+              "mustBeStar": false,
+              "overprep": false
             },
             {
               "itemName": "Egg",
               "quantity": 1,
               "lock": "",
               "emoji": ":_PaliaEgg:1187811912558321704",
-              "mustBeStar": false
+              "mustBeStar": false,
+              "overprep": false
             },
             {
               "itemName": "Butter",
               "quantity": 1,
               "lock": "",
               "emoji": ":_PaliaButter:1187164360418795521",
-              "mustBeStar": false
+              "mustBeStar": false,
+              "overprep": false
             }
           ]
         },
@@ -160,14 +172,16 @@
               "quantity": 1,
               "lock": "",
               "emoji": ":_PaliaMilk:1187167346675159101",
-              "mustBeStar": false
+              "mustBeStar": false,
+              "overprep": false
             },
             {
               "itemName": "Butter",
               "quantity": 1,
               "lock": "",
               "emoji": ":_PaliaButter:1187164360418795521",
-              "mustBeStar": false
+              "mustBeStar": false,
+              "overprep": false
             }
           ]
         },
@@ -181,14 +195,16 @@
               "quantity": 1,
               "lock": "",
               "emoji": ":_PaliaApple:1187183683019489310",
-              "mustBeStar": true
+              "mustBeStar": true,
+              "overprep": false
             },
             {
               "itemName": "Sugar",
               "quantity": 1,
               "lock": "",
               "emoji": ":_PaliaSugar:1201348979200380928",
-              "mustBeStar": false
+              "mustBeStar": false,
+              "overprep": false
             }
           ]
         },
@@ -220,14 +236,16 @@
               "quantity": 1,
               "lock": "",
               "emoji": ":_PaliaBloob:1194866305065554000",
-              "mustBeStar": true
+              "mustBeStar": true,
+              "overprep": false
             },
             {
               "itemName": "Recipe",
               "quantity": 1,
               "lock": "",
               "emoji": ":_PaliaRecipe:1201195151767388260",
-              "mustBeStar": false
+              "mustBeStar": false,
+              "overprep": false
             }
           ]
         },
@@ -241,28 +259,32 @@
               "quantity": 1,
               "lock": "",
               "emoji": ":_PaliaSweetleaf:1162137938839216168",
-              "mustBeStar": false
+              "mustBeStar": false,
+              "overprep": true
             },
             {
               "itemName": "Flour",
               "quantity": 1,
               "lock": "",
               "emoji": ":_PaliaFlour:1187166985927282781",
-              "mustBeStar": false
+              "mustBeStar": false,
+              "overprep": false
             },
             {
               "itemName": "Egg",
               "quantity": 1,
               "lock": "",
               "emoji": ":_PaliaEgg:1187811912558321704",
-              "mustBeStar": false
+              "mustBeStar": false,
+              "overprep": false
             },
             {
               "itemName": "Butter",
               "quantity": 1,
               "lock": "",
               "emoji": ":_PaliaButter:1187164360418795521",
-              "mustBeStar": false
+              "mustBeStar": false,
+              "overprep": false
             }
           ]
         },
@@ -276,21 +298,24 @@
               "quantity": 1,
               "lock": "",
               "emoji": ":_PaliaSweetleaf:1162137938839216168",
-              "mustBeStar": false
+              "mustBeStar": false,
+              "overprep": true
             },
             {
               "itemName": "Milk",
               "quantity": 1,
               "lock": "",
               "emoji": ":_PaliaMilk:1187167346675159101",
-              "mustBeStar": false
+              "mustBeStar": false,
+              "overprep": false
             },
             {
               "itemName": "Butter",
               "quantity": 1,
               "lock": "",
               "emoji": ":_PaliaButter:1187164360418795521",
-              "mustBeStar": false
+              "mustBeStar": false,
+              "overprep": false
             }
           ]
         },
@@ -304,14 +329,16 @@
               "quantity": 1,
               "lock": "",
               "emoji": ":_PaliaApple:1187183683019489310",
-              "mustBeStar": true
+              "mustBeStar": true,
+              "overprep": false
             },
             {
               "itemName": "Sugar",
               "quantity": 1,
               "lock": "",
               "emoji": ":_PaliaSugar:1201348979200380928",
-              "mustBeStar": false
+              "mustBeStar": false,
+              "overprep": false
             }
           ]
         }
@@ -331,14 +358,16 @@
               "quantity": 1,
               "lock": "",
               "emoji": ":_PaliaSpiceSprouts:1182028648681844767",
-              "mustBeStar": false
+              "mustBeStar": false,
+              "overprep": false
             },
             {
               "itemName": "Recipe",
               "quantity": 1,
               "lock": "",
               "emoji": ":_PaliaRecipe:1201195151767388260",
-              "mustBeStar": false
+              "mustBeStar": false,
+              "overprep": false
             }
           ]
         },
@@ -352,7 +381,8 @@
               "quantity": 1,
               "lock": "",
               "emoji": ":_PaliaRice:1187184548820291584",
-              "mustBeStar": true
+              "mustBeStar": true,
+              "overprep": false
             }
           ]
         },
@@ -366,7 +396,8 @@
               "quantity": 1,
               "lock": "",
               "emoji": ":_PaliaVeg:1187806448558801016",
-              "mustBeStar": true
+              "mustBeStar": true,
+              "overprep": true
             }
           ]
         },
@@ -380,7 +411,8 @@
               "quantity": 1,
               "lock": "Carrots",
               "emoji": ":_PaliaWheat:1182203482791493662",
-              "mustBeStar": true
+              "mustBeStar": true,
+              "overprep": true
             }
           ]
         },
@@ -394,7 +426,8 @@
               "quantity": 1,
               "lock": "Carrots",
               "emoji": ":_PaliaSpicyPepper:1187184531934023790",
-              "mustBeStar": true
+              "mustBeStar": true,
+              "overprep": false
             }
           ]
         },
@@ -408,7 +441,8 @@
               "quantity": 1,
               "lock": "Carrots",
               "emoji": ":_PaliaRedMeat:1187805002182438922",
-              "mustBeStar": false
+              "mustBeStar": false,
+              "overprep": true
             }
           ]
         },
@@ -422,7 +456,8 @@
               "quantity": 1,
               "lock": "",
               "emoji": ":_PaliaCookingOil:1187156236458786956",
-              "mustBeStar": false
+              "mustBeStar": false,
+              "overprep": false
             }
           ]
         }
@@ -442,21 +477,24 @@
               "quantity": 1,
               "lock": "",
               "emoji": ":_PaliaCorn:1187184665438728223",
-              "mustBeStar": true
+              "mustBeStar": true,
+              "overprep": false
             },
             {
               "itemName": "Butter",
               "quantity": 1,
               "lock": "",
               "emoji": ":_PaliaButter:1187164360418795521",
-              "mustBeStar": false
+              "mustBeStar": false,
+              "overprep": false
             },
             {
               "itemName": "Recipe",
               "quantity": 1,
               "lock": "",
               "emoji": ":_PaliaRecipe:1201195151767388260",
-              "mustBeStar": false
+              "mustBeStar": false,
+              "overprep": false
             }
           ]
         },
@@ -470,7 +508,8 @@
               "quantity": 1,
               "lock": "Non-Vampire Crabs",
               "emoji": ":crab:",
-              "mustBeStar": false
+              "mustBeStar": false,
+              "overprep": false
             }
           ]
         },
@@ -484,7 +523,8 @@
               "quantity": 1,
               "lock": "Carrots",
               "emoji": ":_PaliaWheat:1182203482791493662",
-              "mustBeStar": true
+              "mustBeStar": true,
+              "overprep": true
             }
           ]
         },
@@ -498,7 +538,8 @@
               "quantity": 1,
               "lock": "Carrots",
               "emoji": ":_PaliaVeg:1187806448558801016",
-              "mustBeStar": true
+              "mustBeStar": true,
+              "overprep": true
             }
           ]
         },
@@ -512,7 +553,8 @@
               "quantity": 1,
               "lock": "Carrots",
               "emoji": ":_PaliaOnion:1187184278828748941",
-              "mustBeStar": true
+              "mustBeStar": true,
+              "overprep": true
             }
           ]
         }
