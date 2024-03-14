@@ -1,14 +1,27 @@
 package org.example;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.core.type.TypeReference;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
+import discord4j.core.object.component.Button;
+import discord4j.core.object.entity.Member;
 import discord4j.core.spec.EmbedCreateSpec;
 import discord4j.rest.util.Color;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 
+@JsonIgnoreProperties
 public class PartyInfo implements Serializable
 {
     private TypeInfo type;
@@ -19,13 +32,19 @@ public class PartyInfo implements Serializable
     private String commandGuid;
     private String timestamp = "";
     private long quantity;
+    private LocalDateTime created;
+    private long messageid;
+    private long channelid;
+    private boolean voice;
 
     private Recipe recipe;
 
 
     private List<UserInfo> userList;
 
-    public PartyInfo(TypeInfo type, UserInfo hostInfo, long people, String server, boolean status, String commandGuid, String timestamp, Recipe recipe, long quantity)
+    private static final Logger log = LoggerFactory.getLogger(PartyInfo.class);
+    public PartyInfo(){}
+    public PartyInfo(TypeInfo type, UserInfo hostInfo, long people, String server, boolean status, String commandGuid, String timestamp, Recipe recipe, long quantity, boolean voice)
     {
         this.type = type;
         this.hostInfo = hostInfo;
@@ -36,31 +55,36 @@ public class PartyInfo implements Serializable
         this.timestamp = timestamp;
         this.recipe = recipe;
         this.quantity = quantity;
+        this.created = LocalDateTime.now();
+        this.voice = voice;
 
-        this.userList = new ArrayList<>();
+        this.userList = Collections.synchronizedList(new ArrayList<>());
     }
 
     private static List<PartyInfo> infoList = new ArrayList<>();
-    private static boolean changed = true;
+    private static AtomicBoolean changed = new AtomicBoolean(true);
 
     public static void writeInfoList(){
-        if(changed){
-            Fileable.write(PartyInfo.class, PartyInfo.getInfoList());
-            changed = false;
+        if(changed.get()){
+            new Thread(() -> Fileable.write(PartyInfo.class, PartyInfo.getInfoList())).start();
+            changed.set(false);
         }
     }
 
     public static void updateInfoList(){
-        changed = true;
+        changed.set(true);
     }
 
     public static void addToInfoList(PartyInfo info){
         infoList.add(info);
-        changed = true;
+        changed.set(true);
     }
 
-    public static List<PartyInfo> getInfoList(){
-        if(infoList.isEmpty()) infoList = Fileable.readFromFile(PartyInfo.class);
+    public  static List<PartyInfo> getInfoList(){
+        if(infoList.isEmpty()) {
+            List<PartyInfo> result = Fileable.readFromFile(PartyInfo.class.getSimpleName(), new TypeReference<List<PartyInfo>>() {});
+            if(result != null) infoList.addAll(result);
+        }
 
         return new ArrayList<>(infoList);
     }
@@ -69,9 +93,34 @@ public class PartyInfo implements Serializable
         return getInfoList().stream().filter(info -> info.getCommandGuid().equals(guid)).findFirst().orElse(null);
     }
 
+    public static void removeClosedParties(){
+        infoList.removeIf(info -> !info.isStatus());
+        changed.set(true);
+        writeInfoList();
+    }
+
+    public boolean isHost(Member member){
+        if(member == null) return false;
+
+        return member.getId().asString().equals(getHostInfo().getId());
+    }
+
+    @Override
+    public String toString() {
+        return type + " created on " + created.format(DateTimeFormatter.ofPattern("dd/MM/yy hh:mm a"));
+    }
+
+    public String fullNameString() {
+        return type + " created on " + created.format(DateTimeFormatter.ofPattern("dd/MM/yy hh:mm a")) + " by " + hostInfo.getName();
+    }
+
     public static PartyInfo createFromEvent(ChatInputInteractionEvent event, String modalGuid) {
         String userName = event.getInteraction().getUser().getGlobalName().get();
         String userid = event.getInteraction().getUser().getId().asString();
+
+        if(event.getInteraction().getMember().isPresent())
+            userName = event.getInteraction().getMember().get().getDisplayName();
+
 
         TypeInfo type = TypeInfo.getType(event.getOption("type").get().getValue().get().asString());
         long people = getPeople(event);
@@ -85,8 +134,9 @@ public class PartyInfo implements Serializable
 
         UserInfo userInfo = new UserInfo(userid, userName, "");
         Recipe recipe = getRecipe(event);
+        boolean voice = event.getOption("voice").isPresent() && event.getOption("voice").get().getValue().get().asBoolean();
 
-        PartyInfo info = new PartyInfo(type, userInfo, finalPeople, server, true, modalGuid, timestamp, recipe, quantity);
+        PartyInfo info = new PartyInfo(type, userInfo, finalPeople, server, true, modalGuid, timestamp, recipe, quantity, voice);
         addToInfoList(info);
         return info;
     }
@@ -131,11 +181,18 @@ public class PartyInfo implements Serializable
         return type.getColor();
     }
 
-    public void addUser(UserInfo userInfo){
-        if(!userList.contains(userInfo)) {
-            userList.add(userInfo);
-            updateInfoList();
+    public synchronized void addUser(UserInfo userInfo){
+        boolean isCooking = this.getType().getName().equals("Cooking");
+        if(!userInfo.getId().equals(hostInfo.getId()) || isCooking) { // Hosts cannot signup for own party, unless it's a cooking party
+            if(isCooking || !hasRole(userInfo.getRecipeRole())) {     // Cooking can have the same person sign up multiple times, others cannot
+                userList.add(userInfo);
+                updateInfoList();
+            }
         }
+    }
+
+    public boolean hasRole(String role) {
+        return userList.stream().anyMatch(user -> user.getRecipeRole().equals(role));
     }
 
     public void removeUser(String userid){
@@ -144,43 +201,89 @@ public class PartyInfo implements Serializable
     }
 
 
+
+
+    public Main.ButtonInfo createButtons() {
+        PartyInfo partyInfo = this;
+        List<Button> buttons = new ArrayList<>();
+
+        String signUpButtonGUID         = "signup:" + commandGuid;
+        String signUpRoleButtonGUIDBase = "signupRole:" + commandGuid + ":";
+        String deleteButtonGUID         = "delete:" + commandGuid;
+
+        List<Button> roleButtons = new ArrayList<>();
+        if(partyInfo.getRecipe() != null) {
+            Recipe recipe = partyInfo.getRecipe();
+            int id = 0;
+            for (RecipeRole role : recipe.getRoles()) {
+                roleButtons.add(Button.primary(signUpRoleButtonGUIDBase + (id), role.getRoleName()));
+
+                id++;
+            }
+        } else {
+            Button button = Button.primary(signUpButtonGUID, "Sign Up!");
+            buttons.add(button);
+        }
+
+        buttons.addAll(roleButtons);
+
+        Button deleteButton = Button.danger(deleteButtonGUID, "Remove Name");
+        buttons.add(deleteButton);
+
+        return new Main.ButtonInfo(null, buttons);
+    }
+
     public EmbedCreateSpec createEmbed()
     {
         PartyInfo partyInfo = this;
         String status = getStatus(partyInfo);
 
-        String partyName = partyInfo.getType().toString();
-        if(partyInfo.getRecipe() != null) partyName = partyInfo.quantity + "x " + partyInfo.getRecipe().getRecipeName();
+        String partyName = getPartyNameForEmbed();
+
+        String description = partyInfo.getHostInfo().getPingText() + " is hosting a " + partyName + " party " + partyInfo.getTimestamp();
+        if(partyInfo.isVoice())
+            description += "\r\n:microphone2: Join VC/Muted";
 
         EmbedCreateSpec.Builder embed = EmbedCreateSpec.builder()
                 .color(partyInfo.getColor())
                 .title("Hosted by " + partyInfo.getHostInfo().getName() + "")
                 .author( "(" + status + ") " + partyInfo.getServer() + " " + partyInfo.getType() + " Party", "", partyInfo.getImageURL())
-                .description(partyInfo.getHostInfo().getPingText() + " is hosting a " + partyName + " party " + partyInfo.getTimestamp())
-                .thumbnail(partyInfo.getImageURL());
-
+                .description(description);
 
         if(partyInfo.getRecipe() == null)
             embed = embed.addField("Participants:", "", false);
 
         embed = addUsersToEmbed(partyInfo, embed);
+        embed = embed.thumbnail(partyInfo.getImageURL());
 
         embed = embed.timestamp(Instant.now());
+        embed = embed.footer(getCommandGuid(), "");
 
         return embed.build();
+    }
+
+    @JsonIgnore
+    public String getPartyNameForEmbed() {
+        String partyName = this.getType().toString();
+        if(this.getRecipe() != null) partyName = this.quantity + "x " + this.getRecipe().getRecipeName();
+        return partyName;
     }
 
     private static EmbedCreateSpec.Builder addUsersToEmbed(PartyInfo partyInfo, EmbedCreateSpec.Builder embed) {
         if(partyInfo.recipe == null) {
             int personCount = 0;
+
+            List<String> fieldUsers = new ArrayList<>();
             for (UserInfo userInfo : partyInfo.getUserList())
             {
-                embed = embed.addField("", "- " + userInfo.getPingText(), false);
+                fieldUsers.add(userInfo.getPingText());
                 personCount++;
             }
 
             for(int i = personCount; i < partyInfo.getPeople(); i++)
-                embed = embed.addField("", "- Open", false);
+                fieldUsers.add("Open");
+
+            embed = embed.addField("", fieldUsers.stream().map(u -> "- " + u).collect(Collectors.joining("\r\n")), false);
         }
 //<:AdorableFrog:937754121795174420>
         if(partyInfo.recipe != null) {
@@ -190,18 +293,22 @@ public class PartyInfo implements Serializable
                 embed = embed.addField(role.getRoleName() + " - " + role.getStation(), role.getBringDisplayString(partyInfo.quantity), false);
 
                 int personCount = 0;
+                List<String> fieldUsers = new ArrayList<>();
                 for (UserInfo userInfo : partyInfo.getUserList())
                 {
                     if(userInfo.getRecipeRole().equals(roleCounter + "")){
                         personCount++;
-                        embed.addField("", personCount + ": " + userInfo.getPingText(), false);
+                        fieldUsers.add(personCount + ". " + userInfo.getPingText());
                     }
                 }
 
                 if(personCount == 0)
-                    embed = embed.addField("", "1: ", false);
+                    embed = embed.addField("", "1. \r\n", false);
 
-                embed = embed.addField("", " ", false);
+                if(personCount > 0){
+                    embed = embed.addField("", String.join("\r\n", fieldUsers) + "\r\n", false);
+                }
+
                 roleCounter++;
             }
         }
@@ -217,13 +324,6 @@ public class PartyInfo implements Serializable
     }
 
 
-//    public record UserInfo(String id, String name, String recipeRole) implements Serializable {
-//        String getId(){return id;}
-//        String getName(){return name;}
-//        String getPingText(){
-//            return "<@" + id + ">";
-//        }
-//    }
 
     public TypeInfo getType() {
         return type;
@@ -304,5 +404,47 @@ public class PartyInfo implements Serializable
 
     public void setRecipe(Recipe recipe) {
         this.recipe = recipe;
+    }
+
+    public long getMessageid() {
+        return messageid;
+    }
+
+    public void setMessageid(long messageid) {
+        this.messageid = messageid;
+    }
+
+    public long getChannelid() {
+        return channelid;
+    }
+
+    public void setChannelid(long channelid) {
+        this.channelid = channelid;
+    }
+
+    public long getQuantity() {
+        return quantity;
+    }
+
+    public void setQuantity(long quantity) {
+        this.quantity = quantity;
+    }
+
+    public LocalDateTime getCreated() {
+        return created;
+    }
+
+    public void setCreated(LocalDateTime created) {
+        this.created = created;
+    }
+
+    public boolean isVoice()
+    {
+        return voice;
+    }
+
+    public void setVoice(boolean voice)
+    {
+        this.voice = voice;
     }
 }
