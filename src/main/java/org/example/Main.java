@@ -40,6 +40,7 @@ public class Main {
     private static final String token = System.getenv("token");
     public static final long guildId = Long.parseLong(System.getenv("guild_id"));
 
+    static final String CHAT_INPUT_MENTION_PARTY_COMMAND_NAME         = "mentionparty";
     static final String CHAT_INPUT_COMMAND_NAME         = "party";
     static final String CHAT_INPUT_REMOVE_COMMAND_NAME  = "removeuser";
     static final String CHAT_INPUT_CLOSE_COMMAND_NAME   = "closeparty";
@@ -264,7 +265,9 @@ public class Main {
 
 
 
-            if(CHAT_INPUT_REMOVE_COMMAND_NAME.equalsIgnoreCase(event.getCommandName()) || CHAT_INPUT_CLOSE_COMMAND_NAME.equalsIgnoreCase(event.getCommandName())) {
+            if(CHAT_INPUT_REMOVE_COMMAND_NAME.equalsIgnoreCase(event.getCommandName()) ||
+                    CHAT_INPUT_CLOSE_COMMAND_NAME.equalsIgnoreCase(event.getCommandName()) ||
+                    CHAT_INPUT_MENTION_PARTY_COMMAND_NAME.equalsIgnoreCase(event.getCommandName())) {
                 List<PartyInfo> partyInfos = PartyInfo.getInfoList();
                 Member member = event.getInteraction().getMember().get();
 
@@ -408,6 +411,30 @@ public class Main {
                 }
                 return event.reply("You do not have access to modify this party").withEphemeral(true);
             }
+
+            if(CHAT_INPUT_MENTION_PARTY_COMMAND_NAME.equalsIgnoreCase(event.getCommandName())) {
+                String guid = event.getOption("partyid").get().getValue().get().asString();
+
+                PartyInfo partyInfo = PartyInfo.getPartyInfoByGuid(guid);
+                Member member = event.getInteraction().getMember().get();
+                if(partyInfo == null)
+                    return event.reply("Invalid party selected").withEphemeral(true);
+
+                //Is user the host
+                if(partyInfo.isHost(member) || isMod(member)){
+                    List<UserInfo> userInfo = partyInfo.getUserList();
+                    userInfo.add(partyInfo.getHostInfo());
+                    String userPings = partyInfo.getUserList().stream().distinct().map(UserInfo::getPingText).collect(Collectors.joining(" "));
+
+
+                    if(userPings.isEmpty())
+                        return event.reply("No party members found").withEphemeral(true);
+
+                    return event.reply().withContent(userPings)
+                            .doFinally(s -> updateMessage(event, partyInfo));
+                }
+                return event.reply("You do not have access to modify this party").withEphemeral(true);
+            }
             return Mono.empty();
         });
         return onChatInput;
@@ -460,9 +487,17 @@ public class Main {
                 .description("Closes party")
                 .build();
 
+        //Mentions everyone in a specified party
+        ApplicationCommandRequest mentionCommand = ApplicationCommandRequest.builder()
+                .name(CHAT_INPUT_MENTION_PARTY_COMMAND_NAME)
+                .addAllOptions(getClosePartyCommandOptionData())
+                .description("Mentions users in party")
+                .build();
+
         commands.add(partyCommand);
         commands.add(removeCommand);
         commands.add(closeCommand);
+        commands.add(mentionCommand);
         return commands;
     }
 

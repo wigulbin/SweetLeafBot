@@ -114,6 +114,21 @@ public class PartyInfo implements Serializable
         return type + " created on " + created.format(DateTimeFormatter.ofPattern("dd/MM/yy hh:mm a")) + " by " + hostInfo.getName();
     }
 
+    /*
+    - Overprep
+        1. If overprep flag is set on party, look through recipe items to see if any of them have the overprep flag
+        2. If that exists, create new "role" for overprep
+            - There will be a button/section for overpreppers
+        3. They will need to write what they will overprep
+        4. They can only overprep one thing
+        5. They will click Overprep button
+            - Response will be ephemeral with action row of available items that can be overprepped
+            - After selecting on, buttons will vanish. PartyInfo will display "Username - item" under the overprep section
+
+     - Starter role can only be one person
+
+     - Remove button display row of buttons with each role that user is currently in
+     */
     public static PartyInfo createFromEvent(ChatInputInteractionEvent event, String modalGuid) {
         String userName = event.getInteraction().getUser().getGlobalName().get();
         String userid = event.getInteraction().getUser().getId().asString();
