@@ -1,7 +1,10 @@
 package org.example;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 import java.io.Serializable;
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class Ingredient implements Serializable {
     private String itemName = "";
     private int quantity;
