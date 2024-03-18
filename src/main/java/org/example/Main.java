@@ -9,6 +9,7 @@ import discord4j.core.object.Embed;
 import discord4j.core.object.command.ApplicationCommandInteractionOptionValue;
 import discord4j.core.object.command.ApplicationCommandOption;
 import discord4j.core.object.component.*;
+import discord4j.core.object.component.Button;
 import discord4j.core.object.entity.Member;
 import discord4j.core.object.entity.Message;
 import discord4j.core.object.entity.User;
@@ -17,15 +18,19 @@ import discord4j.core.object.entity.channel.TextChannel;
 import discord4j.core.spec.EmbedCreateSpec;
 import discord4j.core.spec.InteractionPresentModalSpec;
 import discord4j.core.spec.MessageEditSpec;
-import discord4j.discordjson.json.ApplicationCommandOptionChoiceData;
-import discord4j.discordjson.json.ApplicationCommandOptionData;
-import discord4j.discordjson.json.ApplicationCommandRequest;
+import discord4j.discordjson.Id;
+import discord4j.discordjson.json.*;
+import discord4j.rest.entity.RestChannel;
+import discord4j.rest.entity.RestMessage;
 import discord4j.rest.interaction.GuildCommandRegistrar;
 import me.xdrop.fuzzywuzzy.FuzzySearch;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Mono;
 
+import java.awt.*;
+import java.time.Instant;
 import java.util.*;
+import java.util.List;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
@@ -129,6 +134,7 @@ public class Main {
                     String buttonUserName = buttonEvent.getInteraction().getMember().get().getDisplayName();
 
                     partyInfo.addUser(new UserInfo(buttonUserid, buttonUserName));
+                    partyInfo.setMessageid(buttonEvent.getInteraction().getMessageId().get().asLong());
                     return buttonEvent.edit("")
                             .withEmbeds(partyInfo.createEmbed())
                             .withComponents(partyInfo.createButtons().getActionRows())
@@ -145,6 +151,7 @@ public class Main {
                         buttonValue = buttonEvent.getCustomId().split(":")[2];
 
                     partyInfo.addUser(new UserInfo(buttonUserid, buttonUserName, buttonValue));
+                    partyInfo.setMessageid(buttonEvent.getInteraction().getMessageId().get().asLong());
 
                     return buttonEvent.edit("")
                             .withEmbeds(partyInfo.createEmbed())
@@ -158,6 +165,7 @@ public class Main {
                     PartyInfo partyInfo = PartyInfo.getPartyInfoByGuid(guid);
                     String buttonUserid = buttonEvent.getInteraction().getUser().getId().asString();
                     partyInfo.removeUser(buttonUserid);
+                    partyInfo.setMessageid(buttonEvent.getInteraction().getMessageId().get().asLong());
 
                     return buttonEvent.edit("")
                             .withEmbeds(partyInfo.createEmbed())
@@ -187,6 +195,7 @@ public class Main {
                         partyInfo.removeUser(buttonUserid);
                     }
 
+                    partyInfo.setMessageid(buttonEvent.getInteraction().getMessageId().get().asLong());
                     return buttonEvent.edit("")
                             .withEmbeds(partyInfo.createEmbed())
                             .withComponents(partyInfo.createButtons().getActionRows())
@@ -201,6 +210,7 @@ public class Main {
                     PartyInfo partyInfo = PartyInfo.getPartyInfoByGuid(guid);
                     partyInfo.removeUser(userid);
 
+                    partyInfo.setMessageid(buttonEvent.getInteraction().getMessageId().get().asLong());
                     return buttonEvent.edit("Success").withComponents(new ArrayList<>())
                             .doOnError(e -> log.error("Button Error", e))
                             .doFinally(s -> updateMessage(buttonEvent, partyInfo));
@@ -442,25 +452,50 @@ public class Main {
 
     private static void updateMessage(DeferrableInteractionEvent event, PartyInfo partyInfo){
         {
-            long messageId = partyInfo.getMessageid(); // Replace with the actual message ID
-
             // Retrieve the message using the message ID
-            Channel channel = event.getClient().getChannelById(Snowflake.of(partyInfo.getChannelid())).block();
-            if (channel instanceof TextChannel textChannel) {
-                textChannel.getMessageById(Snowflake.of(messageId))
-                        .flatMap(message -> {
-                            // Create a new Embed with updated information
-                            EmbedCreateSpec embed = partyInfo.createEmbed();
 
-                            List<LayoutComponent> buttons = new ArrayList<>();
-                            if(partyInfo.isStatus()){
-                                ButtonInfo buttonInfo = partyInfo.createButtons();
-                                buttons.addAll(buttonInfo.getActionRows());
+            RestChannel restChannel = event.getClient()
+                    .getChannelById(Snowflake.of(partyInfo.getChannelid())).block()
+                    .getRestChannel();
+            Id messageId = restChannel.getData().block().lastMessageId().get().orElse(null);
+            if(messageId != null){
+                RestMessage restMessage = null;
+
+                //Button interactions set the message id
+                if(partyInfo.getMessageid() > 0)
+                    restMessage = restChannel.getRestMessage(Snowflake.of(partyInfo.getMessageid()));
+
+                //If no buttons were pressed, this will trigger. Message might be too far back to find, but pressing a button and closing again would fix.
+                if(partyInfo.getMessageid() == 0 || restMessage == null){
+
+                    for (MessageData message : restChannel.getMessagesBefore(Snowflake.of(messageId)).collectList().block()) {
+                        if(message.author().bot().get()) {
+                            boolean correctMessage = false;
+                            EmbedData existingEmbed = message.embeds().stream().findFirst().orElse(null);
+                            if(existingEmbed != null && existingEmbed.footer().get() != null){
+                                String id = existingEmbed.footer().get().text();
+                                correctMessage = id.equals(partyInfo.getCommandGuid());
                             }
 
-                            // Update the message with the new Embed
-                            return message.edit(MessageEditSpec.builder().embeds(List.of(embed)).components(buttons).build());
-                        }).subscribe();
+                            if(correctMessage) {
+                                restMessage = restChannel.getRestMessage(Snowflake.of(message.id()));
+                            }
+                        }
+                    }
+                }
+
+                if(restMessage != null) {
+                    // Create a new Embed with updated information
+                    EmbedCreateSpec embed = partyInfo.createEmbed();
+
+                    List<ComponentData> buttons = new ArrayList<>();
+                    if(partyInfo.isStatus()){
+                        ButtonInfo buttonInfo = partyInfo.createButtons();
+                        buttons.addAll(buttonInfo.getActionRows().stream().map(MessageComponent::getData).toList());
+                    }
+
+                    MessageData updatedMessage = restMessage.edit(MessageEditRequest.builder().embeds(List.of(embed.asRequest())).components(buttons).build()).block();
+                }
             }
         }
     }
@@ -541,7 +576,7 @@ public class Main {
                 , ApplicationCommandOptionChoiceData.builder().name("No Voice Chat Required").value(false).build());
 
         options.add(ApplicationCommandOptionData.builder().name("type").description("type").type(ApplicationCommandOption.Type.STRING.getValue()).autocomplete(true).required(true).build());
-        options.add(ApplicationCommandOptionData.builder().name("server").description("server").type(ApplicationCommandOption.Type.STRING.getValue()).autocomplete(true).required(true).build());
+        options.add(ApplicationCommandOptionData.builder().name("server").description("server").type(ApplicationCommandOption.Type.STRING.getValue()).autocomplete(true).required(false).build());
         options.add(ApplicationCommandOptionData.builder().name("people").description("# of People").type(ApplicationCommandOption.Type.INTEGER.getValue()).autocomplete(false).required(false).build());
         options.add(ApplicationCommandOptionData.builder().name("timestamp").description("Timestamp").type(ApplicationCommandOption.Type.STRING.getValue()).autocomplete(false).required(false).build());
         options.add(ApplicationCommandOptionData.builder().name("recipe").description("Recipe").type(ApplicationCommandOption.Type.STRING.getValue()).autocomplete(true).required(false).build());

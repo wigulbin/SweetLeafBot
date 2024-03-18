@@ -44,7 +44,7 @@ public class PartyInfo implements Serializable
 
     private static final Logger log = LoggerFactory.getLogger(PartyInfo.class);
     public PartyInfo(){}
-    public PartyInfo(TypeInfo type, UserInfo hostInfo, long people, String server, boolean status, String commandGuid, String timestamp, Recipe recipe, long quantity, boolean voice)
+    public PartyInfo(TypeInfo type, UserInfo hostInfo, long people, String server, boolean status, String commandGuid, String timestamp, Recipe recipe, long quantity, boolean voice, long channelid)
     {
         this.type = type;
         this.hostInfo = hostInfo;
@@ -57,6 +57,7 @@ public class PartyInfo implements Serializable
         this.quantity = quantity;
         this.created = LocalDateTime.now();
         this.voice = voice;
+        this.channelid = channelid;
 
         this.userList = Collections.synchronizedList(new ArrayList<>());
     }
@@ -143,15 +144,17 @@ public class PartyInfo implements Serializable
 
         String timestamp = getTimestamp(event);
 
-        String server = event.getOption("server").get().getValue().get().asString();
+        String server = "";
+        if(event.getOption("server").isPresent()) server = event.getOption("server").get().getValue().get().asString();
 
         long finalPeople = people;
 
         UserInfo userInfo = new UserInfo(userid, userName, "");
         Recipe recipe = getRecipe(event);
         boolean voice = event.getOption("voice").isPresent() && event.getOption("voice").get().getValue().get().asBoolean();
+        long channelid = event.getInteraction().getChannelId().asLong();
 
-        PartyInfo info = new PartyInfo(type, userInfo, finalPeople, server, true, modalGuid, timestamp, recipe, quantity, voice);
+        PartyInfo info = new PartyInfo(type, userInfo, finalPeople, server, true, modalGuid, timestamp, recipe, quantity, voice, channelid);
         addToInfoList(info);
         return info;
     }
