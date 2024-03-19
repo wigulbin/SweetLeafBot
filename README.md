@@ -28,6 +28,7 @@ Discord bot to aid with party signups for various activities for the game Palia.
     - docker compose --env-file .env up
     - empty.env is provided to fill in with the guild_id and token to pass through to the env variables
 
+
 **Commands**
 - **/party** - Creates an embedded message to set up a Palia party
     - **Parameters:**
@@ -36,14 +37,20 @@ Discord bot to aid with party signups for various activities for the game Palia.
       - **people** - Not Required. Max number of people allowed for a party, *not* including Cooking.
       - **timestamp** - Not Required. Hammertime timestamp used for when the party is happening. Paste the entire Hammertime code into this field.
       - **voice** - Not Required. Options are true for Voice Chat Requested, or false for Voice Chat Not Required.
-      - **recipe** - Not Required. Options are recipes used in Cooking parties. Should only be used for Cooking parties.
-      - **quantity** - Not Required. The number of food being made in a Cooking party. Should only be used for Cooking parties.
+      - **recipe** - Not Required. Options are recipes used in Cooking parties. Should *only* be used for Cooking parties.
+      - **quantity** - Not Required. The number of food being made in a Cooking party. Should *only* be used for Cooking parties.
 - **/removeuser** - Returns a private dropdown message to select the user being removed. It will remove every instance of the user's name from the party.
     - **Parameters:**
-        - **partyid** - Required. Options are the parties that you have created. Admins/Mods will see all parties.
+        - **partyid** - Required. Options are the parties that you have created. Admins/Mods will see *all* parties.
 - **/mentionparty** - Returns a public message that pings every user in the party.
   - **Parameters:**
-      - **partyid** - Required. Options are the parties that you have created. Admins/Mods will see all parties.
+      - **partyid** - Required. Options are the parties that you have created. Admins/Mods will see *all* parties.
 - **/closeparty** - Returns a public message that pings every user in the party, removes all buttons from the embedded party message, and sets the embed to (Closed).
   - **Parameters:**
-      - **partyid** - Required. Options are the parties that you have created. Admins/Mods will see all parties.
+      - **partyid** - Required. Options are the parties that you have created. Admins/Mods will see *all* parties.
+
+**Embedded Party Message**
+- **Buttons:**
+    - **Sign Up!** - When clicked, user's name will show under "Participants" in embed. Does not display for Cooking parties.
+    - **Recipe Roles** - When clicked, user's name will show under respective recipe role in embed. Only displays for Cooking parties.
+    - **Remove Name** - When clicked, all instances of user's name will be removed from embed. See **/removeuser** to remove someone other than yourself.
