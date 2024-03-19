@@ -7,6 +7,7 @@
         {
           "roleName": "Starter",
           "station": "Oven Station",
+          "maxParticipants": 1,
           "emoji": ":_PaliaOven:1201194156840726648",
           "brings": [
             {
@@ -30,6 +31,7 @@
         {
           "roleName": "Wheat",
           "station": "Prep Station",
+          "maxParticipants": 1,
           "emoji": ":_PaliaPrepStation:1201193977496486019",
           "brings": [
             {
@@ -45,6 +47,7 @@
         {
           "roleName": "Apple/Mixer",
           "station": "Prep Station, Mixing Station",
+          "maxParticipants": 2,
           "emoji": ":_PaliaPrepStation:1201193977496486019",
           "brings": [
             {
@@ -60,6 +63,7 @@
         {
           "roleName": "Leafer",
           "station": "Mixing Station",
+          "maxParticipants": 1,
           "emoji": ":_PaliaMixingStation:1201193976259166228",
           "brings": [
             {
@@ -75,6 +79,7 @@
         {
           "roleName": "Spice Sprouts",
           "station": "Prep Station",
+          "maxParticipants": 1,
           "emoji": ":_PaliaPrepStation:1201193977496486019",
           "brings": [
             {
@@ -96,6 +101,7 @@
         {
           "roleName": "Starter",
           "station": "Prep Station",
+          "maxParticipants": 1,
           "emoji": ":_PaliaPrepStation:1201193977496486019",
           "brings": [
             {
@@ -119,6 +125,7 @@
         {
           "roleName": "Leafer",
           "station": "Mixing Station",
+          "maxParticipants": 4,
           "emoji": ":_PaliaMixingStation:1201193976259166228",
           "brings": [
             {
@@ -134,6 +141,7 @@
         {
           "roleName": "Batter",
           "station": "Mixing Station",
+          "maxParticipants": 3,
           "emoji": ":_PaliaMixingStation:1201193976259166228",
           "brings": [
             {
@@ -165,6 +173,7 @@
         {
           "roleName": "Regular Frost",
           "station": "Mixing Station",
+          "maxParticipants": 1,
           "emoji": ":_PaliaMixingStation:1201193976259166228",
           "brings": [
             {
@@ -188,6 +197,7 @@
         {
           "roleName": "Fruit Frost",
           "station": "Mixing Station",
+          "maxParticipants": 3,
           "emoji": ":_PaliaMixingStation:1201193976259166228",
           "brings": [
             {
@@ -211,12 +221,14 @@
         {
           "roleName": "Baker",
           "station": "Oven Station",
+          "maxParticipants": 3,
           "emoji": ":_PaliaOven:1201194156840726648",
           "brings": []
         },
         {
           "roleName": "Spread",
           "station": "Prep Station",
+          "maxParticipants": 3,
           "emoji": ":_PaliaPrepStation:1201193977496486019",
           "brings": []
         }
@@ -229,6 +241,7 @@
         {
           "roleName": "Starter",
           "station": "Prep Station",
+          "maxParticipants": 1,
           "emoji": ":_PaliaPrepStation:1201193977496486019",
           "brings": [
             {
@@ -252,6 +265,7 @@
         {
           "roleName": "Batter & Baker",
           "station": "Mixing Station & Oven",
+          "maxParticipants": 3,
           "emoji": ":_PaliaMixingStation:1201193976259166228",
           "brings": [
             {
@@ -291,6 +305,7 @@
         {
           "roleName": "Regular Frost",
           "station": "Mixing Station",
+          "maxParticipants": 1,
           "emoji": ":_PaliaMixingStation:1201193976259166228",
           "brings": [
             {
@@ -322,6 +337,7 @@
         {
           "roleName": "Fruit Frost & Spread",
           "station": "Mixing Station",
+          "maxParticipants": 3,
           "emoji": ":_PaliaMixingStation:1201193976259166228",
           "brings": [
             {
@@ -351,6 +367,7 @@
         {
           "roleName": "Starter",
           "station": "Stove Station",
+          "maxParticipants": 1,
           "emoji": ":_PaliaStove:1201193980310851644",
           "brings": [
             {
@@ -374,6 +391,7 @@
         {
           "roleName": "Rice",
           "station": "Stove Station",
+          "maxParticipants": 1,
           "emoji": ":_PaliaStove:1201193980310851644",
           "brings": [
             {
@@ -389,6 +407,7 @@
         {
           "roleName": "Veggie (Any)",
           "station": "Prep Station",
+          "maxParticipants": 1,
           "emoji": ":_PaliaPrepStation:1201193977496486019",
           "brings": [
             {
@@ -404,6 +423,7 @@
         {
           "roleName": "Wheat",
           "station": "Prep Station",
+          "maxParticipants": 1,
           "emoji": ":_PaliaPrepStation:1201193977496486019",
           "brings": [
             {
@@ -419,6 +439,7 @@
         {
           "roleName": "Pepper",
           "station": "Prep Station",
+          "maxParticipants": 1,
           "emoji": ":_PaliaPrepStation:1201193977496486019",
           "brings": [
             {
@@ -434,6 +455,7 @@
         {
           "roleName": "Meat (Any)",
           "station": "Prep Station",
+          "maxParticipants": 1,
           "emoji": ":_PaliaPrepStation:1201193977496486019",
           "brings": [
             {
@@ -449,6 +471,7 @@
         {
           "roleName": "Mixer",
           "station": "Mixing Station",
+          "maxParticipants": 1,
           "emoji": ":_PaliaMixingStation:1201193976259166228",
           "brings": [
             {
@@ -470,6 +493,7 @@
         {
           "roleName": "Starter",
           "station": "Oven Station",
+          "maxParticipants": 1,
           "emoji": ":_PaliaOven:1201194156840726648",
           "brings": [
             {
@@ -501,6 +525,7 @@
         {
           "roleName": "Crab",
           "station": "Prep Station",
+          "maxParticipants": 1,
           "emoji": ":_PaliaPrepStation:1201193977496486019",
           "brings": [
             {
@@ -516,6 +541,7 @@
         {
           "roleName": "Wheat",
           "station": "Prep Station",
+          "maxParticipants": 1,
           "emoji": ":_PaliaPrepStation:1201193977496486019",
           "brings": [
             {
@@ -531,6 +557,7 @@
         {
           "roleName": "Veggie (Any Except Carrots)",
           "station": "Prep Station",
+          "maxParticipants": 1,
           "emoji": ":_PaliaPrepStation:1201193977496486019",
           "brings": [
             {
@@ -546,6 +573,7 @@
         {
           "roleName": "Onion",
           "station": "Prep Station",
+          "maxParticipants": 1,
           "emoji": ":_PaliaPrepStation:1201193977496486019",
           "brings": [
             {
@@ -555,6 +583,132 @@
               "emoji": ":_PaliaOnion:1187184278828748941",
               "mustBeStar": true,
               "overprep": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "recipeName": "Shepp's Pie",
+      "emoji": ":crab:",
+      "roles": [
+        {
+          "roleName": "Starter",
+          "station": "Oven Station",
+          "maxParticipants": 1,
+          "emoji": ":_PaliaOven:1201194156840726648",
+          "brings": [
+            {
+              "itemName": "Salt",
+              "quantity": 1,
+              "lock": "",
+              "emoji": ":_PaliaSalt:1208139806710833172",
+              "mustBeStar": true,
+              "overprep": false
+            },
+            {
+              "itemName": "Recipe",
+              "quantity": 1,
+              "lock": "",
+              "emoji": ":_PaliaRecipe:1201195151767388260",
+              "mustBeStar": false,
+              "overprep": false
+            }
+          ]
+        },
+        {
+          "roleName": "Corn",
+          "station": "Prep Station",
+          "maxParticipants": 1,
+          "emoji": ":_PaliaPrepStation:1201193977496486019",
+          "brings": [
+            {
+              "itemName": "Corn",
+              "quantity": 1,
+              "lock": "",
+              "emoji": ":_PaliaCorn:1187184665438728223",
+              "mustBeStar": false,
+              "overprep": false
+            }
+          ]
+        },
+        {
+          "roleName": "Potatoes",
+          "station": "Prep Station",
+          "maxParticipants": 1,
+          "emoji": ":_PaliaPrepStation:1201193977496486019",
+          "brings": [
+            {
+              "itemName": "Potatoes",
+              "quantity": 1,
+              "lock": "",
+              "emoji": ":_PaliaPotato:1187184385464746045",
+              "mustBeStar": false,
+              "overprep": false
+            }
+          ]
+        },
+        {
+          "roleName": "Carrots",
+          "station": "Prep Station",
+          "maxParticipants": 1,
+          "emoji": ":_PaliaPrepStation:1201193977496486019",
+          "brings": [
+            {
+              "itemName": "Carrots",
+              "quantity": 1,
+              "lock": "",
+              "emoji": ":_PaliaCarrot:1187183902528393328",
+              "mustBeStar": false,
+              "overprep": false
+            }
+          ]
+        },
+        {
+          "roleName": "Chapaa Meat",
+          "station": "Prep Station",
+          "maxParticipants": 1,
+          "emoji": ":_PaliaPrepStation:1201193977496486019",
+          "brings": [
+            {
+              "itemName": "Chapaa Meat",
+              "quantity": 1,
+              "lock": "",
+              "emoji": ":_PaliaChapaaMeat:1208140910496321597",
+              "mustBeStar": false,
+              "overprep": false
+            }
+          ]
+        },
+        {
+          "roleName": "Spice Sprouts",
+          "station": "Prep Station",
+          "maxParticipants": 1,
+          "emoji": ":_PaliaPrepStation:1201193977496486019",
+          "brings": [
+            {
+              "itemName": "Spice Sprouts",
+              "quantity": 1,
+              "lock": "",
+              "emoji": ":_PaliaSpiceSprouts:1182028648681844767",
+              "mustBeStar": false,
+              "overprep": false
+            }
+          ]
+        },
+        {
+          "roleName": "Herbed Butter & Seared Chapaa",
+          "station": "Prep Station & Stove",
+          "maxParticipants": 1,
+          "emoji": ":_PaliaStove:1201193980310851644",
+          "brings": [
+            {
+              "itemName": "Butter",
+              "quantity": 1,
+              "lock": "",
+              "emoji": ":_PaliaButter:1187164360418795521",
+              "mustBeStar": false,
+              "overprep": false
             }
           ]
         }
