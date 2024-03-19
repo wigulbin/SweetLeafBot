@@ -205,16 +205,18 @@ public class PartyInfo implements Serializable
     public synchronized void addUser(UserInfo userInfo){
         boolean isCooking = this.getType().getName().equals("Cooking");
         if(!userInfo.getId().equals(hostInfo.getId()) || isCooking) { // Hosts cannot signup for own party, unless it's a cooking party
-            if(!hasRole(userInfo.getRecipeRole())) {     // Cooking can have the same person sign up multiple times, others cannot
+            if(!hasRole(userInfo)) {     // Cooking can have the same person sign up multiple times, others cannot
                 userList.add(userInfo);
                 updateInfoList();
             }
         }
     }
 
-    public boolean hasRole(String roleString) {
+    public boolean hasRole(UserInfo userInfo) {
+        String roleString = userInfo.getRecipeRole();
         PartyInfo partyInfo = this;
         Recipe recipe = partyInfo.getRecipe();
+        boolean isCooking = this.getType().getName().equals("Cooking");
         if(recipe != null){
             int id = 0;
             for (RecipeRole role : recipe.getRoles()) {
@@ -227,7 +229,7 @@ public class PartyInfo implements Serializable
             }
         }
 
-        return userList.stream().anyMatch(user -> user.getRecipeRole().equals(roleString));
+        return userList.stream().anyMatch(user -> user.getId().equals(userInfo.getId()));
     }
 
     public void removeUser(String userid){
