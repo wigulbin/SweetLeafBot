@@ -262,13 +262,6 @@ public class Main {
                             .forEach(suggestions::add);
                 }
 
-//                if(event.getFocusedOption().getName().equals("voice"))
-//                {
-//                    suggestions.add(ApplicationCommandOptionChoiceData.builder().name("Voice Chat/Muted Required").value(true).build());
-//                    suggestions.add(ApplicationCommandOptionChoiceData.builder().name("No Voice Chat Required").value(false).build());
-//                }
-
-
                 // Finally, return the list of choices to the user
                 return event.respondWithSuggestions(suggestions);
             }

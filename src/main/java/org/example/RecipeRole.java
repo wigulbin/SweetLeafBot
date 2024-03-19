@@ -12,6 +12,7 @@ public class RecipeRole implements Serializable {
     private String station = "";
     private String emoji = "";
     private List<Ingredient> brings;
+    private int maxParticipants;
 
     public RecipeRole() {
     }
@@ -54,5 +55,13 @@ public class RecipeRole implements Serializable {
 
     public void setEmoji(String emoji) {
         this.emoji = emoji;
+    }
+
+    public int getMaxParticipants() {
+        return maxParticipants;
+    }
+
+    public void setMaxParticipants(int maxParticipants) {
+        this.maxParticipants = maxParticipants;
     }
 }

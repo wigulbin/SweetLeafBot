@@ -207,15 +207,29 @@ public class PartyInfo implements Serializable
     public synchronized void addUser(UserInfo userInfo){
         boolean isCooking = this.getType().getName().equals("Cooking");
         if(!userInfo.getId().equals(hostInfo.getId()) || isCooking) { // Hosts cannot signup for own party, unless it's a cooking party
-            if(isCooking || !hasRole(userInfo.getRecipeRole())) {     // Cooking can have the same person sign up multiple times, others cannot
+            if(!hasRole(userInfo.getRecipeRole())) {     // Cooking can have the same person sign up multiple times, others cannot
                 userList.add(userInfo);
                 updateInfoList();
             }
         }
     }
 
-    public boolean hasRole(String role) {
-        return userList.stream().anyMatch(user -> user.getRecipeRole().equals(role));
+    public boolean hasRole(String roleString) {
+        PartyInfo partyInfo = this;
+        Recipe recipe = partyInfo.getRecipe();
+        if(recipe != null){
+            int id = 0;
+            for (RecipeRole role : recipe.getRoles()) {
+                String idString = id + "";
+
+                if(idString.equals(roleString)){
+                    return role.getMaxParticipants() <= partyInfo.getUserList().stream().filter(user -> user.getRecipeRole().equals(idString)).count();
+                }
+                id++;
+            }
+        }
+
+        return userList.stream().anyMatch(user -> user.getRecipeRole().equals(roleString));
     }
 
     public void removeUser(String userid){
@@ -239,8 +253,10 @@ public class PartyInfo implements Serializable
             Recipe recipe = partyInfo.getRecipe();
             int id = 0;
             for (RecipeRole role : recipe.getRoles()) {
-                roleButtons.add(Button.primary(signUpRoleButtonGUIDBase + (id), role.getRoleName()));
-
+                String idString = id + "";
+                if(role.getMaxParticipants() > partyInfo.getUserList().stream().filter(user -> user.getRecipeRole().equals(idString)).count()){
+                    roleButtons.add(Button.primary(signUpRoleButtonGUIDBase + (id), role.getRoleName()));
+                }
                 id++;
             }
         } else {
@@ -308,7 +324,7 @@ public class PartyInfo implements Serializable
 
             embed = embed.addField("", fieldUsers.stream().map(u -> "- " + u).collect(Collectors.joining("\r\n")), false);
         }
-//<:AdorableFrog:937754121795174420>
+
         if(partyInfo.recipe != null) {
             Recipe recipe = partyInfo.recipe;
             int roleCounter = 0;
@@ -324,13 +340,10 @@ public class PartyInfo implements Serializable
                         fieldUsers.add(personCount + ". " + userInfo.getPingText());
                     }
                 }
+                for(int i = personCount; i < role.getMaxParticipants(); i++)
+                    fieldUsers.add((i + 1) + ".");
 
-                if(personCount == 0)
-                    embed = embed.addField("", "1. \r\n", false);
-
-                if(personCount > 0){
-                    embed = embed.addField("", String.join("\r\n", fieldUsers) + "\r\n", false);
-                }
+                embed = embed.addField("", String.join("\r\n", fieldUsers) + "\r\n", false);
 
                 roleCounter++;
             }
