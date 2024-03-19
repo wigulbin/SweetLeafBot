@@ -603,7 +603,7 @@
               "quantity": 1,
               "lock": "",
               "emoji": ":_PaliaSalt:1208139806710833172",
-              "mustBeStar": true,
+              "mustBeStar": false,
               "overprep": false
             },
             {
