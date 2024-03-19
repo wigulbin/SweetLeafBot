@@ -33,15 +33,16 @@ public class PartyInfo implements Serializable
     private String timestamp = "";
     private long quantity;
     private LocalDateTime created;
+    private boolean voice;
     private long messageid;
     private long channelid;
-    private boolean voice;
 
     private Recipe recipe;
 
 
     private List<UserInfo> userList;
 
+    public static final List<String> SERVERS = List.of("NA", "EU", "PA");
     private static final Logger log = LoggerFactory.getLogger(PartyInfo.class);
     public PartyInfo(){}
     public PartyInfo(TypeInfo type, UserInfo hostInfo, long people, String server, boolean status, String commandGuid, String timestamp, Recipe recipe, long quantity, boolean voice, long channelid)
@@ -62,7 +63,7 @@ public class PartyInfo implements Serializable
         this.userList = Collections.synchronizedList(new ArrayList<>());
     }
 
-    private static List<PartyInfo> infoList = new ArrayList<>();
+    private static List<PartyInfo> infoList = null;
     private static AtomicBoolean changed = new AtomicBoolean(true);
 
     public static void writeInfoList(){
@@ -82,9 +83,9 @@ public class PartyInfo implements Serializable
     }
 
     public  static List<PartyInfo> getInfoList(){
-        if(infoList.isEmpty()) {
+        if(infoList == null) {
             List<PartyInfo> result = Fileable.readFromFile(PartyInfo.class.getSimpleName(), new TypeReference<List<PartyInfo>>() {});
-            if(result != null) infoList.addAll(result);
+            if(result != null) infoList = new ArrayList<>(result);
         }
 
         return new ArrayList<>(infoList);
@@ -103,7 +104,11 @@ public class PartyInfo implements Serializable
     public boolean isHost(Member member){
         if(member == null) return false;
 
-        return member.getId().asString().equals(getHostInfo().getId());
+        return isHost(member.getId().asString());
+    }
+
+    public boolean isHost(String id){
+        return id.equals(getHostInfo().getId());
     }
 
     @Override
@@ -334,7 +339,7 @@ public class PartyInfo implements Serializable
         return embed;
     }
 
-    private static String getStatus(PartyInfo partyInfo) {
+    public static String getStatus(PartyInfo partyInfo) {
         String status = "Open";
         if(!partyInfo.isStatus())
             status = "Closed";

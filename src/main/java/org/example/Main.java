@@ -22,6 +22,7 @@ import discord4j.discordjson.Id;
 import discord4j.discordjson.json.*;
 import discord4j.rest.entity.RestChannel;
 import discord4j.rest.entity.RestMessage;
+import discord4j.rest.http.client.ClientException;
 import discord4j.rest.interaction.GuildCommandRegistrar;
 import me.xdrop.fuzzywuzzy.FuzzySearch;
 import org.reactivestreams.Publisher;
@@ -250,7 +251,6 @@ public class Main {
                     suggestions.add(ApplicationCommandOptionChoiceData.builder().name("NA").value("NA").build());
                     suggestions.add(ApplicationCommandOptionChoiceData.builder().name("EU").value("EU").build());
                     suggestions.add(ApplicationCommandOptionChoiceData.builder().name("PA").value("PA").build());
-                    suggestions.add(ApplicationCommandOptionChoiceData.builder().name("Any").value("").build());
                 }
 
                 if(event.getFocusedOption().getName().equals("recipe"))
@@ -454,48 +454,63 @@ public class Main {
         {
             // Retrieve the message using the message ID
 
-            RestChannel restChannel = event.getClient()
-                    .getChannelById(Snowflake.of(partyInfo.getChannelid())).block()
-                    .getRestChannel();
-            Id messageId = restChannel.getData().block().lastMessageId().get().orElse(null);
-            if(messageId != null){
-                RestMessage restMessage = null;
+            try{
 
-                //Button interactions set the message id
-                if(partyInfo.getMessageid() > 0)
-                    restMessage = restChannel.getRestMessage(Snowflake.of(partyInfo.getMessageid()));
+                RestChannel restChannel = event.getClient()
+                        .getChannelById(Snowflake.of(partyInfo.getChannelid())).block()
+                        .getRestChannel();
 
-                //If no buttons were pressed, this will trigger. Message might be too far back to find, but pressing a button and closing again would fix.
-                if(partyInfo.getMessageid() == 0 || restMessage == null){
 
-                    for (MessageData message : restChannel.getMessagesBefore(Snowflake.of(messageId)).collectList().block()) {
-                        if(message.author().bot().get()) {
-                            boolean correctMessage = false;
-                            EmbedData existingEmbed = message.embeds().stream().findFirst().orElse(null);
-                            if(existingEmbed != null && existingEmbed.footer().get() != null){
-                                String id = existingEmbed.footer().get().text();
-                                correctMessage = id.equals(partyInfo.getCommandGuid());
-                            }
+                Id messageId = restChannel.getData().block().lastMessageId().get().orElse(null);
+                if(messageId != null){
+                    RestMessage restMessage = null;
 
-                            if(correctMessage) {
-                                restMessage = restChannel.getRestMessage(Snowflake.of(message.id()));
+                    //Button interactions set the message id
+                    if(partyInfo.getMessageid() > 0)
+                        restMessage = restChannel.getRestMessage(Snowflake.of(partyInfo.getMessageid()));
+
+                    //If no buttons were pressed, this will trigger. Message might be too far back to find, but pressing a button and closing again would fix.
+                    if(partyInfo.getMessageid() == 0 || restMessage == null){
+
+                        for (MessageData message : restChannel.getMessagesBefore(Snowflake.of(messageId)).collectList().block()) {
+                            if(message.author().bot().get()) {
+                                boolean correctMessage = false;
+                                EmbedData existingEmbed = message.embeds().stream().findFirst().orElse(null);
+                                if(existingEmbed != null && existingEmbed.footer().get() != null){
+                                    String id = existingEmbed.footer().get().text();
+                                    correctMessage = id.equals(partyInfo.getCommandGuid());
+                                }
+
+                                if(correctMessage) {
+                                    restMessage = restChannel.getRestMessage(Snowflake.of(message.id()));
+                                }
                             }
                         }
                     }
-                }
 
-                if(restMessage != null) {
-                    // Create a new Embed with updated information
-                    EmbedCreateSpec embed = partyInfo.createEmbed();
+                    if(restMessage != null) {
+                        // Create a new Embed with updated information
+                        EmbedCreateSpec embed = partyInfo.createEmbed();
 
-                    List<ComponentData> buttons = new ArrayList<>();
-                    if(partyInfo.isStatus()){
-                        ButtonInfo buttonInfo = partyInfo.createButtons();
-                        buttons.addAll(buttonInfo.getActionRows().stream().map(MessageComponent::getData).toList());
+                        List<ComponentData> buttons = new ArrayList<>();
+                        if(partyInfo.isStatus()){
+                            ButtonInfo buttonInfo = partyInfo.createButtons();
+                            buttons.addAll(buttonInfo.getActionRows().stream().map(MessageComponent::getData).toList());
+                        }
+
+                        MessageData updatedMessage = restMessage.edit(MessageEditRequest.builder().embeds(List.of(embed.asRequest())).components(buttons).build()).block();
                     }
 
-                    MessageData updatedMessage = restMessage.edit(MessageEditRequest.builder().embeds(List.of(embed.asRequest())).components(buttons).build()).block();
+                    if(restMessage == null) {
+                        if(restChannel.getData().block() == null){
+                            partyInfo.setStatus(false);
+                            PartyInfo.removeClosedParties();
+                        }
+                    }
                 }
+            } catch (ClientException e) {
+                partyInfo.setStatus(false);
+                PartyInfo.removeClosedParties();
             }
         }
     }
