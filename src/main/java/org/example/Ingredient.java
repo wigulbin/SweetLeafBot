@@ -11,6 +11,7 @@ public class Ingredient implements Serializable {
     private String emoji = "";
     private boolean mustBeStar;
     private String lock;
+    private boolean overprep;
 
     public Ingredient() {
     }
@@ -71,5 +72,13 @@ public class Ingredient implements Serializable {
 
     public void setLock(String lock) {
         this.lock = lock;
+    }
+
+    public boolean isOverprep() {
+        return overprep;
+    }
+
+    public void setOverprep(boolean overprep) {
+        this.overprep = overprep;
     }
 }

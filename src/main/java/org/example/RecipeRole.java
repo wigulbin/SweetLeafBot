@@ -18,6 +18,9 @@ public class RecipeRole implements Serializable {
     }
 
 
+    public String getDisplayString(){
+        return this.getRoleName() + " - " + this.getStation() + " <" + this.getEmoji() + "> ";
+    }
 
     public String getBringDisplayString(long quantity){
         return brings.stream()

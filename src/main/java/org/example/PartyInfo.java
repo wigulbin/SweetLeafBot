@@ -131,9 +131,7 @@ public class PartyInfo implements Serializable
             - Response will be ephemeral with action row of available items that can be overprepped
             - After selecting on, buttons will vanish. PartyInfo will display "Username - item" under the overprep section
 
-     - Starter role can only be one person
-
-     - Remove button display row of buttons with each role that user is currently in
+     - Remove command - Remove button display row of buttons with each role that user is currently in
      */
     public static PartyInfo createFromEvent(ChatInputInteractionEvent event, String modalGuid) {
         String userName = event.getInteraction().getUser().getGlobalName().get();
@@ -240,6 +238,7 @@ public class PartyInfo implements Serializable
 
 
 
+    //Add overpret role button if any ingredient contains an overprep
     public Main.ButtonInfo createButtons() {
         PartyInfo partyInfo = this;
         List<Button> buttons = new ArrayList<>();
@@ -265,6 +264,7 @@ public class PartyInfo implements Serializable
         }
 
         buttons.addAll(roleButtons);
+
 
         Button deleteButton = Button.danger(deleteButtonGUID, "Remove Name");
         buttons.add(deleteButton);
@@ -329,7 +329,7 @@ public class PartyInfo implements Serializable
             Recipe recipe = partyInfo.recipe;
             int roleCounter = 0;
             for (RecipeRole role : recipe.getRoles()) {
-                embed = embed.addField(role.getRoleName() + " - " + role.getStation(), role.getBringDisplayString(partyInfo.quantity), false);
+                embed = embed.addField(role.getDisplayString(), role.getBringDisplayString(partyInfo.quantity), false);
 
                 int personCount = 0;
                 List<String> fieldUsers = new ArrayList<>();
