@@ -22,6 +22,7 @@ public class Common {
         return 0;
     }
 
+    //Just adding a comment
     public static String removeSpaces(String string){
         return string.replaceAll(" ", "");
     }
