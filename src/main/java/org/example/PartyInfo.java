@@ -18,6 +18,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.TimeZone;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
@@ -95,6 +96,13 @@ public class PartyInfo implements Serializable
         return getInfoList().stream().filter(info -> info.getCommandGuid().equals(guid)).findFirst().orElse(null);
     }
 
+    public static List<PartyInfo> getOldParties(){
+        LocalDateTime removeByDate = LocalDateTime.now().minusDays(1);
+        return getInfoList().stream()
+                .filter(info -> info.getEventStartDateTime() != null && info.getEventStartDateTime().isBefore(removeByDate))
+                .toList();
+    }
+
     public static void removeClosedParties(){
         infoList.removeIf(info -> !info.isStatus());
         changed.set(true);
@@ -161,7 +169,7 @@ public class PartyInfo implements Serializable
         addToInfoList(info);
         return info;
     }
-    private static Recipe getRecipe(ChatInputInteractionEvent event) {
+    public static Recipe getRecipe(ChatInputInteractionEvent event) {
         Recipe recipe = null;
 
         String recipeName = "";
@@ -175,7 +183,7 @@ public class PartyInfo implements Serializable
         return recipe;
     }
 
-    private static String getTimestamp(ChatInputInteractionEvent event) {
+    public static String getTimestamp(ChatInputInteractionEvent event) {
         String timestamp = "";
         if(event.getOption("timestamp").isPresent()) timestamp = event.getOption("timestamp").get().getValue().get().asString();
         return timestamp;
@@ -283,7 +291,7 @@ public class PartyInfo implements Serializable
 
         String description = partyInfo.getHostInfo().getPingText() + " is hosting a " + partyName + " party " + partyInfo.getTimestamp();
         if(partyInfo.isVoice())
-            description += "\r\n:microphone2: Join VC/Muted";
+            description += "\r\n:microphone2: Join VC or Muted";
 
         EmbedCreateSpec.Builder embed = EmbedCreateSpec.builder()
                 .color(partyInfo.getColor())
@@ -305,7 +313,8 @@ public class PartyInfo implements Serializable
 
     @JsonIgnore
     public String getPartyNameForEmbed() {
-        String partyName = this.getType().toString();
+        TypeInfo typeInfo = this.getType();
+        String partyName = typeInfo == null ? "No type defined" : typeInfo.toString();
         if(this.getRecipe() != null) partyName = this.quantity + "x " + this.getRecipe().getRecipeName();
         return partyName;
     }
@@ -484,5 +493,15 @@ public class PartyInfo implements Serializable
     public void setVoice(boolean voice)
     {
         this.voice = voice;
+    }
+
+    @JsonIgnore
+    public LocalDateTime getEventStartDateTime(){
+        if(getTimestamp().isEmpty()) return null;
+
+        String hammerTimeString = getTimestamp();
+        String unixTimeStamp = hammerTimeString.substring(hammerTimeString.indexOf(":") + 1, hammerTimeString.lastIndexOf(":"));
+        long time = Long.parseLong(unixTimeStamp) * 1000;
+        return LocalDateTime.ofInstant(Instant.ofEpochMilli(time), TimeZone.getDefault().toZoneId());
     }
 }

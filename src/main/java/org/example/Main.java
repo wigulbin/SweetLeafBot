@@ -13,11 +13,8 @@ import discord4j.core.object.component.Button;
 import discord4j.core.object.entity.Member;
 import discord4j.core.object.entity.Message;
 import discord4j.core.object.entity.User;
-import discord4j.core.object.entity.channel.Channel;
-import discord4j.core.object.entity.channel.TextChannel;
 import discord4j.core.spec.EmbedCreateSpec;
 import discord4j.core.spec.InteractionPresentModalSpec;
-import discord4j.core.spec.MessageEditSpec;
 import discord4j.discordjson.Id;
 import discord4j.discordjson.json.*;
 import discord4j.rest.entity.RestChannel;
@@ -28,8 +25,6 @@ import me.xdrop.fuzzywuzzy.FuzzySearch;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Mono;
 
-import java.awt.*;
-import java.time.Instant;
 import java.util.*;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -46,19 +41,21 @@ public class Main {
     private static final String token = System.getenv("token");
     public static final long guildId = Long.parseLong(System.getenv("guild_id"));
 
-    static final String CHAT_INPUT_MENTION_PARTY_COMMAND_NAME         = "mentionparty";
-    static final String CHAT_INPUT_COMMAND_NAME         = "party";
-    static final String CHAT_INPUT_REMOVE_COMMAND_NAME  = "removeuser";
-    static final String CHAT_INPUT_CLOSE_COMMAND_NAME   = "closeparty";
-    static final String REMOVE_MODAL_ID                 = "removeModal";
-    static final String CLOSE_PARTY_ID                  = "closeParty:";
+    static final String CHAT_INPUT_MENTION_PARTY_COMMAND_NAME           = "mentionparty";
+    static final String CHAT_INPUT_COMMAND_NAME                         = "party";
+    static final String CHAT_INPUT_REMOVE_COMMAND_NAME                  = "removeuser";
+    static final String CHAT_INPUT_START_PARTY_COMMAND_NAME             = "startparty";
+    static final String CHAT_INPUT_CLOSE_SILENT_COMMAND_NAME            = "closepartysilent";
+    static final String CHAT_CLOSE_OLD_PARTIES                          = "closeoldparties";
+    static final String REMOVE_MODAL_ID                                 = "removeModal";
+    static final String CLOSE_PARTY_ID                                  = "closeParty:";
 
-    static final String SIGN_UP_BUTTON_BASEID           = "signup:";
-    static final String SIGN_UP_ROLE_BUTTON_BASEID      = "signupRole:";
-    static final String DELETE_BUTTON_BASEID            = "delete:";
+    static final String SIGN_UP_BUTTON_BASEID                           = "signup:";
+    static final String SIGN_UP_ROLE_BUTTON_BASEID                      = "signupRole:";
+    static final String DELETE_BUTTON_BASEID                            = "delete:";
 
-    static final String REMOVE_USER_SELECT              = "removeUserSelect:";
-    static final String REMOVE_USER_BUTTON              = "removeUserButton:";
+    static final String REMOVE_USER_SELECT                              = "removeUserSelect:";
+    static final String REMOVE_USER_BUTTON                              = "removeUserButton:";
 
     static final Set<Snowflake> MOD_ROLES = Set.of(Snowflake.of("1156959674655047783"), Snowflake.of("1152059333916512297"));
     public static final String INTRO_CHANNEL_ID = "1152046915731603487";
@@ -267,9 +264,20 @@ public class Main {
             }
 
 
+            if(CHAT_INPUT_CLOSE_SILENT_COMMAND_NAME.equalsIgnoreCase(event.getCommandName())){
+                List<PartyInfo> partyInfos = PartyInfo.getInfoList();
+                Member member = event.getInteraction().getMember().get();
+                List<ApplicationCommandOptionChoiceData> suggestions = new ArrayList<>();
+                if(isMod(member)){
+                    suggestions.addAll(partyInfos.stream()
+                            .map(info -> ApplicationCommandOptionChoiceData.builder().name(info.fullNameString()).value(info.getCommandGuid()).build()).toList());
+                }
+
+                return event.respondWithSuggestions(suggestions);
+            }
 
             if(CHAT_INPUT_REMOVE_COMMAND_NAME.equalsIgnoreCase(event.getCommandName()) ||
-                    CHAT_INPUT_CLOSE_COMMAND_NAME.equalsIgnoreCase(event.getCommandName()) ||
+                    CHAT_INPUT_START_PARTY_COMMAND_NAME.equalsIgnoreCase(event.getCommandName()) ||
                     CHAT_INPUT_MENTION_PARTY_COMMAND_NAME.equalsIgnoreCase(event.getCommandName())) {
                 List<PartyInfo> partyInfos = PartyInfo.getInfoList();
                 Member member = event.getInteraction().getMember().get();
@@ -359,6 +367,21 @@ public class Main {
         Publisher<?> onChatInput = client.on(ChatInputInteractionEvent.class, event -> {
             if (CHAT_INPUT_COMMAND_NAME.equals(event.getCommandName())) {
                 String commandGuid = Common.createGUID();
+
+                TypeInfo type = TypeInfo.getType(event.getOption("type").get().getValue().get().asString());
+                if(type == null) return event.reply().withContent("Invalid Party Type selected, please use one of the provided options.").withEphemeral(true);
+
+                String timestamp = PartyInfo.getTimestamp(event);
+                if(!timestamp.isEmpty() && !timestamp.matches("<[A-z]:[\\d]{10}:[A-z]>"))
+                    return event.reply().withContent("Invalid timestamp provided.").withEphemeral(true);
+
+                if(event.getOption("recipe").isPresent()) {
+                    String recipe = event.getOption("recipe").get().getValue().toString();
+                    if(!recipe.isEmpty() && PartyInfo.getRecipe(event) == null)
+                        return event.reply().withContent("Invalid recipe provided.").withEphemeral(true);
+
+                }
+
                 PartyInfo partyInfo = PartyInfo.createFromEvent(event, commandGuid);
 
                 ButtonInfo buttonInfo = partyInfo.createButtons();
@@ -393,7 +416,43 @@ public class Main {
                 return event.reply("You do not have access to modify this party").withEphemeral(true);
             }
 
-            if(CHAT_INPUT_CLOSE_COMMAND_NAME.equalsIgnoreCase(event.getCommandName())) {
+            if(CHAT_CLOSE_OLD_PARTIES.equalsIgnoreCase(event.getCommandName())) {
+                List<PartyInfo> partyInfoList = PartyInfo.getOldParties();
+                Member member = event.getInteraction().getMember().get();
+                if(partyInfoList.isEmpty())
+                    return event.reply("No old parties found").withEphemeral(true);
+
+                //Is user the host
+                if(isMod(member)){
+                    for (PartyInfo partyInfo : partyInfoList)
+                        partyInfo.setStatus(false);
+
+                    PartyInfo.removeClosedParties();
+                    return event.reply(partyInfoList.size() + " parties closed.").withEphemeral(true)
+                            .doFinally(s -> partyInfoList.forEach((partyInfo -> updateMessage(event, partyInfo))));
+                }
+                return event.reply("You do not have access to modify these parties").withEphemeral(true);
+            }
+
+            if(CHAT_INPUT_CLOSE_SILENT_COMMAND_NAME.equalsIgnoreCase(event.getCommandName())) {
+                String guid = event.getOption("partyid").get().getValue().get().asString();
+
+                PartyInfo partyInfo = PartyInfo.getPartyInfoByGuid(guid);
+                Member member = event.getInteraction().getMember().get();
+                if(partyInfo == null)
+                    return event.reply("Invalid party selected").withEphemeral(true);
+
+                //Is user the host
+                if(isMod(member)){
+                    partyInfo.setStatus(false);
+
+                    PartyInfo.removeClosedParties();
+                    return event.reply().withContent("Party successfully closed").withEphemeral(true).doFinally(s -> updateMessage(event, partyInfo));
+                }
+                return event.reply("You do not have access to modify this party").withEphemeral(true);
+            }
+
+            if(CHAT_INPUT_START_PARTY_COMMAND_NAME.equalsIgnoreCase(event.getCommandName())) {
                 String guid = event.getOption("partyid").get().getValue().get().asString();
 
                 PartyInfo partyInfo = PartyInfo.getPartyInfoByGuid(guid);
@@ -524,10 +583,21 @@ public class Main {
                 .build();
 
         //Removes button, (Open) becomes closed
-        ApplicationCommandRequest closeCommand = ApplicationCommandRequest.builder()
-                .name(CHAT_INPUT_CLOSE_COMMAND_NAME)
+        ApplicationCommandRequest startCommand = ApplicationCommandRequest.builder()
+                .name(CHAT_INPUT_START_PARTY_COMMAND_NAME)
                 .addAllOptions(getClosePartyCommandOptionData())
-                .description("Closes party")
+                .description("Starts party")
+                .build();
+
+        //Removes button, (Open) becomes closed
+        ApplicationCommandRequest closeCommand = ApplicationCommandRequest.builder()
+                .name(CHAT_INPUT_CLOSE_SILENT_COMMAND_NAME)
+                .addAllOptions(getClosePartyCommandOptionData())
+                .description("Closes party (no ping)")
+                .build();
+        ApplicationCommandRequest closeOldPartiesCommand = ApplicationCommandRequest.builder()
+                .name(CHAT_CLOSE_OLD_PARTIES)
+                .description("Closes all parties with a start time greater than 24 hours ago")
                 .build();
 
         //Mentions everyone in a specified party
@@ -539,7 +609,9 @@ public class Main {
 
         commands.add(partyCommand);
         commands.add(removeCommand);
+        commands.add(startCommand);
         commands.add(closeCommand);
+        commands.add(closeOldPartiesCommand);
         commands.add(mentionCommand);
         return commands;
     }
@@ -589,7 +661,7 @@ public class Main {
         options.add(ApplicationCommandOptionData.builder().name("timestamp").description("Timestamp").type(ApplicationCommandOption.Type.STRING.getValue()).autocomplete(false).required(false).build());
         options.add(ApplicationCommandOptionData.builder().name("recipe").description("Recipe").type(ApplicationCommandOption.Type.STRING.getValue()).autocomplete(true).required(false).build());
         options.add(ApplicationCommandOptionData.builder().name("quantity").description("Recipe Quantity").type(ApplicationCommandOption.Type.INTEGER.getValue()).autocomplete(false).required(false).build());
-        options.add(ApplicationCommandOptionData.builder().name("voice").description("Voice Chat Options").type(ApplicationCommandOption.Type.BOOLEAN.getValue()).autocomplete(false).choices(voiceOptions).required(false).build());
+        options.add(ApplicationCommandOptionData.builder().name("voice").description("Voice Chat/Muted Preferred").type(ApplicationCommandOption.Type.BOOLEAN.getValue()).autocomplete(false).choices(voiceOptions).required(false).build());
 
         return options;
     }

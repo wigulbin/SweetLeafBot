@@ -9,7 +9,7 @@ public class UserInfo implements Serializable {
     private String id = "";
     private String name = "";
     private String recipeRole = "";
-
+    private boolean overPrep;
     public UserInfo() {
     }
 
@@ -65,5 +65,13 @@ public class UserInfo implements Serializable {
 
     public void setRecipeRole(String recipeRole) {
         this.recipeRole = recipeRole;
+    }
+
+    public boolean isOverPrep() {
+        return overPrep;
+    }
+
+    public void setOverPrep(boolean overPrep) {
+        this.overPrep = overPrep;
     }
 }

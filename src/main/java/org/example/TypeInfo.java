@@ -26,7 +26,7 @@ public class TypeInfo implements Serializable {
     }
 
     public static TypeInfo getType(String code) {
-        return codesList.stream().filter(info -> info.code.equals(code)).findFirst().orElse(null);
+        return codesList.stream().filter(info -> info.code.equalsIgnoreCase(code)).findFirst().orElse(null);
     }
 
     private TypeInfo(){};
